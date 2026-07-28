@@ -247,4 +247,3 @@ function GoogleGlyph() {
     </svg>
   );
 }
-// force
