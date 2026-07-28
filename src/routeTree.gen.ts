@@ -14,6 +14,12 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCodiceRouteImport } from './routes/_authenticated/codice'
+import { Route as AuthenticatedCharactersRouteImport } from './routes/_authenticated/characters'
+import { Route as AuthenticatedCampaignsRouteImport } from './routes/_authenticated/campaigns'
+import { Route as AuthenticatedCharactersNewRouteImport } from './routes/_authenticated/characters.new'
+import { Route as AuthenticatedCharactersIdRouteImport } from './routes/_authenticated/characters.$id'
+import { Route as AuthenticatedCampaignsIdRouteImport } from './routes/_authenticated/campaigns.$id'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -39,39 +45,116 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCodiceRoute = AuthenticatedCodiceRouteImport.update({
+  id: '/codice',
+  path: '/codice',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCharactersRoute = AuthenticatedCharactersRouteImport.update({
+  id: '/characters',
+  path: '/characters',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCampaignsRoute = AuthenticatedCampaignsRouteImport.update({
+  id: '/campaigns',
+  path: '/campaigns',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCharactersNewRoute =
+  AuthenticatedCharactersNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedCharactersRoute,
+  } as any)
+const AuthenticatedCharactersIdRoute =
+  AuthenticatedCharactersIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedCharactersRoute,
+  } as any)
+const AuthenticatedCampaignsIdRoute =
+  AuthenticatedCampaignsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedCampaignsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/campaigns': typeof AuthenticatedCampaignsRouteWithChildren
+  '/characters': typeof AuthenticatedCharactersRouteWithChildren
+  '/codice': typeof AuthenticatedCodiceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/campaigns/$id': typeof AuthenticatedCampaignsIdRoute
+  '/characters/$id': typeof AuthenticatedCharactersIdRoute
+  '/characters/new': typeof AuthenticatedCharactersNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/campaigns': typeof AuthenticatedCampaignsRouteWithChildren
+  '/characters': typeof AuthenticatedCharactersRouteWithChildren
+  '/codice': typeof AuthenticatedCodiceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/campaigns/$id': typeof AuthenticatedCampaignsIdRoute
+  '/characters/$id': typeof AuthenticatedCharactersIdRoute
+  '/characters/new': typeof AuthenticatedCharactersNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/campaigns': typeof AuthenticatedCampaignsRouteWithChildren
+  '/_authenticated/characters': typeof AuthenticatedCharactersRouteWithChildren
+  '/_authenticated/codice': typeof AuthenticatedCodiceRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/campaigns/$id': typeof AuthenticatedCampaignsIdRoute
+  '/_authenticated/characters/$id': typeof AuthenticatedCharactersIdRoute
+  '/_authenticated/characters/new': typeof AuthenticatedCharactersNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard' | '/profile'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/campaigns'
+    | '/characters'
+    | '/codice'
+    | '/dashboard'
+    | '/profile'
+    | '/campaigns/$id'
+    | '/characters/$id'
+    | '/characters/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/profile'
+  to:
+    | '/'
+    | '/auth'
+    | '/campaigns'
+    | '/characters'
+    | '/codice'
+    | '/dashboard'
+    | '/profile'
+    | '/campaigns/$id'
+    | '/characters/$id'
+    | '/characters/new'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/campaigns'
+    | '/_authenticated/characters'
+    | '/_authenticated/codice'
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
+    | '/_authenticated/campaigns/$id'
+    | '/_authenticated/characters/$id'
+    | '/_authenticated/characters/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,15 +200,93 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/codice': {
+      id: '/_authenticated/codice'
+      path: '/codice'
+      fullPath: '/codice'
+      preLoaderRoute: typeof AuthenticatedCodiceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/characters': {
+      id: '/_authenticated/characters'
+      path: '/characters'
+      fullPath: '/characters'
+      preLoaderRoute: typeof AuthenticatedCharactersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/campaigns': {
+      id: '/_authenticated/campaigns'
+      path: '/campaigns'
+      fullPath: '/campaigns'
+      preLoaderRoute: typeof AuthenticatedCampaignsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/characters/new': {
+      id: '/_authenticated/characters/new'
+      path: '/new'
+      fullPath: '/characters/new'
+      preLoaderRoute: typeof AuthenticatedCharactersNewRouteImport
+      parentRoute: typeof AuthenticatedCharactersRoute
+    }
+    '/_authenticated/characters/$id': {
+      id: '/_authenticated/characters/$id'
+      path: '/$id'
+      fullPath: '/characters/$id'
+      preLoaderRoute: typeof AuthenticatedCharactersIdRouteImport
+      parentRoute: typeof AuthenticatedCharactersRoute
+    }
+    '/_authenticated/campaigns/$id': {
+      id: '/_authenticated/campaigns/$id'
+      path: '/$id'
+      fullPath: '/campaigns/$id'
+      preLoaderRoute: typeof AuthenticatedCampaignsIdRouteImport
+      parentRoute: typeof AuthenticatedCampaignsRoute
+    }
   }
 }
 
+interface AuthenticatedCampaignsRouteChildren {
+  AuthenticatedCampaignsIdRoute: typeof AuthenticatedCampaignsIdRoute
+}
+
+const AuthenticatedCampaignsRouteChildren: AuthenticatedCampaignsRouteChildren =
+  {
+    AuthenticatedCampaignsIdRoute: AuthenticatedCampaignsIdRoute,
+  }
+
+const AuthenticatedCampaignsRouteWithChildren =
+  AuthenticatedCampaignsRoute._addFileChildren(
+    AuthenticatedCampaignsRouteChildren,
+  )
+
+interface AuthenticatedCharactersRouteChildren {
+  AuthenticatedCharactersIdRoute: typeof AuthenticatedCharactersIdRoute
+  AuthenticatedCharactersNewRoute: typeof AuthenticatedCharactersNewRoute
+}
+
+const AuthenticatedCharactersRouteChildren: AuthenticatedCharactersRouteChildren =
+  {
+    AuthenticatedCharactersIdRoute: AuthenticatedCharactersIdRoute,
+    AuthenticatedCharactersNewRoute: AuthenticatedCharactersNewRoute,
+  }
+
+const AuthenticatedCharactersRouteWithChildren =
+  AuthenticatedCharactersRoute._addFileChildren(
+    AuthenticatedCharactersRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedCampaignsRoute: typeof AuthenticatedCampaignsRouteWithChildren
+  AuthenticatedCharactersRoute: typeof AuthenticatedCharactersRouteWithChildren
+  AuthenticatedCodiceRoute: typeof AuthenticatedCodiceRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedCampaignsRoute: AuthenticatedCampaignsRouteWithChildren,
+  AuthenticatedCharactersRoute: AuthenticatedCharactersRouteWithChildren,
+  AuthenticatedCodiceRoute: AuthenticatedCodiceRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
 }
@@ -141,3 +302,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
