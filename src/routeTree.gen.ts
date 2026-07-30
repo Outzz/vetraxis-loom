@@ -17,6 +17,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCodiceRouteImport } from './routes/_authenticated/codice'
 import { Route as AuthenticatedCharactersRouteImport } from './routes/_authenticated/characters'
 import { Route as AuthenticatedCampaignsRouteImport } from './routes/_authenticated/campaigns'
+import { Route as AuthenticatedBestiarioRouteImport } from './routes/_authenticated/bestiario'
 import { Route as AuthenticatedCharactersNewRouteImport } from './routes/_authenticated/characters.new'
 import { Route as AuthenticatedCharactersIdRouteImport } from './routes/_authenticated/characters.$id'
 import { Route as AuthenticatedCampaignsIdRouteImport } from './routes/_authenticated/campaigns.$id'
@@ -60,6 +61,11 @@ const AuthenticatedCampaignsRoute = AuthenticatedCampaignsRouteImport.update({
   path: '/campaigns',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBestiarioRoute = AuthenticatedBestiarioRouteImport.update({
+  id: '/bestiario',
+  path: '/bestiario',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCharactersNewRoute =
   AuthenticatedCharactersNewRouteImport.update({
     id: '/new',
@@ -82,6 +88,7 @@ const AuthenticatedCampaignsIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/bestiario': typeof AuthenticatedBestiarioRoute
   '/campaigns': typeof AuthenticatedCampaignsRouteWithChildren
   '/characters': typeof AuthenticatedCharactersRouteWithChildren
   '/codice': typeof AuthenticatedCodiceRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/bestiario': typeof AuthenticatedBestiarioRoute
   '/campaigns': typeof AuthenticatedCampaignsRouteWithChildren
   '/characters': typeof AuthenticatedCharactersRouteWithChildren
   '/codice': typeof AuthenticatedCodiceRoute
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/bestiario': typeof AuthenticatedBestiarioRoute
   '/_authenticated/campaigns': typeof AuthenticatedCampaignsRouteWithChildren
   '/_authenticated/characters': typeof AuthenticatedCharactersRouteWithChildren
   '/_authenticated/codice': typeof AuthenticatedCodiceRoute
@@ -122,6 +131,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/bestiario'
     | '/campaigns'
     | '/characters'
     | '/codice'
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/bestiario'
     | '/campaigns'
     | '/characters'
     | '/codice'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/bestiario'
     | '/_authenticated/campaigns'
     | '/_authenticated/characters'
     | '/_authenticated/codice'
@@ -221,6 +233,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCampaignsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/bestiario': {
+      id: '/_authenticated/bestiario'
+      path: '/bestiario'
+      fullPath: '/bestiario'
+      preLoaderRoute: typeof AuthenticatedBestiarioRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/characters/new': {
       id: '/_authenticated/characters/new'
       path: '/new'
@@ -276,6 +295,7 @@ const AuthenticatedCharactersRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBestiarioRoute: typeof AuthenticatedBestiarioRoute
   AuthenticatedCampaignsRoute: typeof AuthenticatedCampaignsRouteWithChildren
   AuthenticatedCharactersRoute: typeof AuthenticatedCharactersRouteWithChildren
   AuthenticatedCodiceRoute: typeof AuthenticatedCodiceRoute
@@ -284,6 +304,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBestiarioRoute: AuthenticatedBestiarioRoute,
   AuthenticatedCampaignsRoute: AuthenticatedCampaignsRouteWithChildren,
   AuthenticatedCharactersRoute: AuthenticatedCharactersRouteWithChildren,
   AuthenticatedCodiceRoute: AuthenticatedCodiceRoute,

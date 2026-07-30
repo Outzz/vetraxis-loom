@@ -100,8 +100,8 @@ function Dashboard() {
       title: "Bestiário",
       desc: "",
       size: "square",
-      disabled: true,
-      meta: "Fase 3",
+      to: "/bestiario",
+      meta: "15 anomalias",
       glyph: <div className="size-1.5 rounded-full bg-prismatic" />,
     },
     {
