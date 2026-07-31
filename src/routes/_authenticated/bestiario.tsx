@@ -355,6 +355,16 @@ function CreatureDetail({ creature: c }: { creature: Creature }) {
       <p className="text-[10px] uppercase tracking-widest text-white/35">
         Sanidade CD {c.sanityDC} · Corrupção +{c.corruption} ao derrotar
       </p>
+
+      <button
+        onClick={() => {
+          queueCreature(c.id);
+          navigate({ to: "/combate" });
+        }}
+        className="w-full rounded-md bg-ritual-gold py-3 text-xs uppercase tracking-[0.2em] text-abyss transition-colors hover:bg-ritual-gold/90"
+      >
+        Enviar para Combate
+      </button>
     </div>
   );
 }

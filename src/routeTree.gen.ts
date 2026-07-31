@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCombateRouteImport } from './routes/_authenticated/combate'
 import { Route as AuthenticatedCodiceRouteImport } from './routes/_authenticated/codice'
 import { Route as AuthenticatedCharactersRouteImport } from './routes/_authenticated/characters'
 import { Route as AuthenticatedCampaignsRouteImport } from './routes/_authenticated/campaigns'
@@ -44,6 +45,11 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCombateRoute = AuthenticatedCombateRouteImport.update({
+  id: '/combate',
+  path: '/combate',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCodiceRoute = AuthenticatedCodiceRouteImport.update({
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/campaigns': typeof AuthenticatedCampaignsRouteWithChildren
   '/characters': typeof AuthenticatedCharactersRouteWithChildren
   '/codice': typeof AuthenticatedCodiceRoute
+  '/combate': typeof AuthenticatedCombateRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/campaigns/$id': typeof AuthenticatedCampaignsIdRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/campaigns': typeof AuthenticatedCampaignsRouteWithChildren
   '/characters': typeof AuthenticatedCharactersRouteWithChildren
   '/codice': typeof AuthenticatedCodiceRoute
+  '/combate': typeof AuthenticatedCombateRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/campaigns/$id': typeof AuthenticatedCampaignsIdRoute
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/_authenticated/campaigns': typeof AuthenticatedCampaignsRouteWithChildren
   '/_authenticated/characters': typeof AuthenticatedCharactersRouteWithChildren
   '/_authenticated/codice': typeof AuthenticatedCodiceRoute
+  '/_authenticated/combate': typeof AuthenticatedCombateRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/campaigns/$id': typeof AuthenticatedCampaignsIdRoute
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/campaigns'
     | '/characters'
     | '/codice'
+    | '/combate'
     | '/dashboard'
     | '/profile'
     | '/campaigns/$id'
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/campaigns'
     | '/characters'
     | '/codice'
+    | '/combate'
     | '/dashboard'
     | '/profile'
     | '/campaigns/$id'
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/_authenticated/campaigns'
     | '/_authenticated/characters'
     | '/_authenticated/codice'
+    | '/_authenticated/combate'
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
     | '/_authenticated/campaigns/$id'
@@ -210,6 +222,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/combate': {
+      id: '/_authenticated/combate'
+      path: '/combate'
+      fullPath: '/combate'
+      preLoaderRoute: typeof AuthenticatedCombateRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/codice': {
@@ -299,6 +318,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCampaignsRoute: typeof AuthenticatedCampaignsRouteWithChildren
   AuthenticatedCharactersRoute: typeof AuthenticatedCharactersRouteWithChildren
   AuthenticatedCodiceRoute: typeof AuthenticatedCodiceRoute
+  AuthenticatedCombateRoute: typeof AuthenticatedCombateRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
 }
@@ -308,6 +328,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCampaignsRoute: AuthenticatedCampaignsRouteWithChildren,
   AuthenticatedCharactersRoute: AuthenticatedCharactersRouteWithChildren,
   AuthenticatedCodiceRoute: AuthenticatedCodiceRoute,
+  AuthenticatedCombateRoute: AuthenticatedCombateRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
 }
