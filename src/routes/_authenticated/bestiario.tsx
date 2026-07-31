@@ -1,5 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { queueCreature } from "@/lib/combat";
 import {
   BEHAVIORS,
   CREATURES,
@@ -295,6 +296,7 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 }
 
 function CreatureDetail({ creature: c }: { creature: Creature }) {
+  const navigate = useNavigate();
   const el = ELEMENTS[c.element];
   const th = THREATS[c.threat];
   return (
@@ -355,6 +357,16 @@ function CreatureDetail({ creature: c }: { creature: Creature }) {
       <p className="text-[10px] uppercase tracking-widest text-white/35">
         Sanidade CD {c.sanityDC} · Corrupção +{c.corruption} ao derrotar
       </p>
+
+      <button
+        onClick={() => {
+          queueCreature(c.id);
+          navigate({ to: "/combate" });
+        }}
+        className="w-full rounded-md bg-ritual-gold py-3 text-xs uppercase tracking-[0.2em] text-abyss transition-colors hover:bg-ritual-gold/90"
+      >
+        Enviar para Combate
+      </button>
     </div>
   );
 }

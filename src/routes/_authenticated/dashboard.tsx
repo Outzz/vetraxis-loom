@@ -118,8 +118,8 @@ function Dashboard() {
       title: "Combate",
       desc: "",
       size: "square",
-      disabled: true,
-      meta: "Fase 3",
+      to: "/combate",
+      meta: "Mesa ritual",
       glyph: <div className="size-3 rounded-full ring-1 ring-white/50" />,
     },
     {

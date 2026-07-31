@@ -263,6 +263,7 @@ export type Database = {
         Args: { _campaign_id: string; _user_id: string }
         Returns: boolean
       }
+      join_campaign_by_code: { Args: { _code: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "master" | "player"

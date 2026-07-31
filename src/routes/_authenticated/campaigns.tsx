@@ -274,25 +274,17 @@ function JoinCampaignModal({
       setSaving(false);
       return;
     }
-    // Fetch by invite code — but RLS restricts SELECT to members only.
-    // We use an RPC-less approach: allow lookup via master_id fallback? Instead we ask user for exact code and try join.
-    // To keep it simple: query campaigns with anon-safe view via a small edge... nope. Use secondary: try inserting membership with lookup by code
-    const { data: campaign, error: findErr } = await supabase
-      .from("campaigns")
-      .select("id")
-      .eq("invite_code", code.trim().toUpperCase())
-      .maybeSingle();
-    if (findErr || !campaign) {
-      toast.error("Código não encontrado ou sem acesso. Peça ao Mestre para adicionar você.");
-      setSaving(false);
-      return;
-    }
-    const { error } = await supabase
-      .from("campaign_members")
-      .insert({ campaign_id: campaign.id, user_id: u.user.id, role: "player" });
+    // Junção via função segura no banco: qualquer usuário logado pode entrar com o código.
+    const { error } = await supabase.rpc("join_campaign_by_code", {
+      _code: code.trim().toUpperCase(),
+    });
     setSaving(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(
+        error.message.includes("inválido")
+          ? "Código de convite inválido."
+          : error.message,
+      );
       return;
     }
     toast.success("Você foi vinculado à Crônica.");
