@@ -296,6 +296,7 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 }
 
 function CreatureDetail({ creature: c }: { creature: Creature }) {
+  const navigate = useNavigate();
   const el = ELEMENTS[c.element];
   const th = THREATS[c.threat];
   return (
