@@ -8,7 +8,15 @@ import { CosmicBackground } from "@/components/CosmicBackground";
 
 const searchSchema = z.object({
   mode: z.enum(["login", "signup"]).optional(),
+  next: z.string().optional(),
 });
+
+/** Only same-origin relative paths may be used as a post-login destination. */
+function safeNext(next?: string) {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return null;
+  return next;
+}
+
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
