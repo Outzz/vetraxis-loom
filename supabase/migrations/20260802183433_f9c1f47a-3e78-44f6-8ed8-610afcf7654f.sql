@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.shares_campaign_with(uuid, uuid) FROM authenticated;
