@@ -1,0 +1,168 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.1",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://upmiukxfbzxenprodvad.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "cosmic-anomaly-nexus",
+      "version": "0.1.0",
+      "title": "Cosmic Anomaly Nexus"
+    },
+    "tools": [
+      {
+        "name": "list_campaigns",
+        "title": "List campaigns",
+        "description": "List the Anomalia Cósmica campaigns the signed-in user masters or plays in.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_characters",
+        "title": "List characters",
+        "description": "List the character sheets visible to the signed-in user, with level, element, HP, sanity and corruption.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_character",
+        "title": "Get character sheet",
+        "description": "Read one full character sheet (attributes, skills, inventory, powers, scars, notes) by its id.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "character_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "The character's id."
+            }
+          },
+          "required": [
+            "character_id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_character_resources",
+        "title": "Update character resources",
+        "description": "Set current HP (PV), sanity (PS), action points (PA) or corruption on a character the signed-in user owns.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "character_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "The character's id."
+            },
+            "hp_current": {
+              "description": "New current HP (PV).",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "sanity_current": {
+              "description": "New current sanity (PS).",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "pa_current": {
+              "description": "New current action points (PA).",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "corruption": {
+              "description": "New corruption value (0-100).",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            }
+          },
+          "required": [
+            "character_id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "search_bestiary",
+        "title": "Search the bestiary",
+        "description": "Search the Anomalia Cósmica creature bestiary by text, threat level, cosmic element or behavior. Returns full combat stats.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "query": {
+              "description": "Free text matched against name, epithet and lore.",
+              "type": "string"
+            },
+            "threat": {
+              "description": "Filter by threat level.",
+              "type": "string",
+              "enum": [
+                "menor",
+                "moderada",
+                "severa",
+                "cataclismica"
+              ]
+            },
+            "element": {
+              "description": "Filter by cosmic element, e.g. sombra.",
+              "type": "string"
+            },
+            "behavior": {
+              "description": "Filter by behavior pattern.",
+              "type": "string"
+            }
+          }
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

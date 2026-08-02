@@ -8,7 +8,15 @@ import { CosmicBackground } from "@/components/CosmicBackground";
 
 const searchSchema = z.object({
   mode: z.enum(["login", "signup"]).optional(),
+  next: z.string().optional(),
 });
+
+/** Only same-origin relative paths may be used as a post-login destination. */
+function safeNext(next?: string) {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return null;
+  return next;
+}
+
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -34,7 +42,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const { mode: initialMode } = Route.useSearch();
+  const { mode: initialMode, next } = Route.useSearch();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">(initialMode ?? "login");
   const [email, setEmail] = useState("");
@@ -42,12 +50,25 @@ function AuthPage() {
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const destination = safeNext(next);
+
+  function goToDestination() {
+    if (destination) {
+      window.location.href = destination;
+      return;
+    }
+    navigate({ to: "/dashboard" });
+  }
+
   // Redirect if already signed in
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard" });
+      if (data.session) {
+        if (destination) window.location.href = destination;
+        else navigate({ to: "/dashboard" });
+      }
     });
-  }, [navigate]);
+  }, [navigate, destination]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,7 +79,8 @@ function AuthPage() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
+            emailRedirectTo:
+              window.location.origin + (destination ?? "/dashboard"),
             data: { display_name: displayName || email.split("@")[0] },
           },
         });
@@ -71,7 +93,7 @@ function AuthPage() {
         });
         if (error) throw error;
         toast.success("Consciência sincronizada.");
-        navigate({ to: "/dashboard" });
+        goToDestination();
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro desconhecido";
@@ -85,11 +107,11 @@ function AuthPage() {
     setLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin + "/dashboard",
+        redirect_uri: window.location.origin + (destination ?? "/dashboard"),
       });
       if (result.error) throw result.error;
       if (!result.redirected) {
-        navigate({ to: "/dashboard" });
+        goToDestination();
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro desconhecido";
@@ -97,6 +119,7 @@ function AuthPage() {
       setLoading(false);
     }
   }
+
 
   return (
     <div className="relative min-h-screen">
