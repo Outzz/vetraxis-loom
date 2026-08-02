@@ -264,6 +264,10 @@ export type Database = {
         Returns: boolean
       }
       join_campaign_by_code: { Args: { _code: string }; Returns: string }
+      shares_campaign_with: {
+        Args: { _other_user_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "master" | "player"
