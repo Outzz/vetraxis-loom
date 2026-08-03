@@ -11,6 +11,7 @@ import {
   drainQueue,
   loadEncounter,
   logEntry,
+  resourceKey,
   rollAttack,
   rollFormula,
   saveEncounter,
@@ -52,6 +53,7 @@ function Combate() {
   const [query, setQuery] = useState("");
   const [hydrated, setHydrated] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
+  const syncedRef = useRef<Record<string, string>>({});
 
   useEffect(() => {
     const loaded = loadEncounter();
@@ -76,14 +78,86 @@ function Combate() {
 
     supabase
       .from("characters")
-      .select("id,name,concept,element,hp_current,hp_max,pa_current,pa_max,dex_score")
+      .select(
+        "id,name,concept,element,hp_current,hp_max,sanity_current,sanity_max,pa_current,pa_max,corruption,dex_score",
+      )
       .order("created_at", { ascending: false })
-      .then(({ data }) => setChars((data as CharacterLike[]) ?? []));
+      .then(({ data }) => {
+        const list = (data as CharacterLike[]) ?? [];
+        setChars(list);
+        // A ficha é a fonte da verdade ao abrir a mesa.
+        setState((s) => ({
+          ...s,
+          combatants: s.combatants.map((c) => {
+            if (c.kind !== "character") return c;
+            const ch = list.find((x) => x.id === c.sourceId);
+            if (!ch) return c;
+            const synced: Combatant = {
+              ...c,
+              hpCurrent: ch.hp_current,
+              hpMax: ch.hp_max,
+              sanityCurrent: ch.sanity_current ?? c.sanityCurrent,
+              sanityMax: ch.sanity_max ?? c.sanityMax,
+              paCurrent: ch.pa_current,
+              paMax: ch.pa_max,
+              corruption: ch.corruption ?? c.corruption,
+              defeated: ch.hp_current === 0,
+            };
+            syncedRef.current[c.sourceId] = resourceKey(synced);
+            return synced;
+          }),
+        }));
+      });
   }, []);
 
   useEffect(() => {
     if (hydrated) saveEncounter(state);
   }, [state, hydrated]);
+
+  // Sincroniza PV/PS/PA/Corrupção dos Portadores de volta para as fichas.
+  useEffect(() => {
+    if (!hydrated) return;
+    const pending = state.combatants.filter(
+      (c) => c.kind === "character" && syncedRef.current[c.sourceId] !== resourceKey(c),
+    );
+    if (pending.length === 0) return;
+
+    const timer = setTimeout(async () => {
+      for (const c of pending) {
+        const key = resourceKey(c);
+        syncedRef.current[c.sourceId] = key;
+        const patch = {
+          hp_current: c.hpCurrent,
+          pa_current: c.paCurrent,
+          ...(c.sanityCurrent !== undefined ? { sanity_current: c.sanityCurrent } : {}),
+          ...(c.corruption !== undefined ? { corruption: c.corruption } : {}),
+        };
+
+        const { error } = await supabase.from("characters").update(patch).eq("id", c.sourceId);
+        if (error) {
+          delete syncedRef.current[c.sourceId];
+          toast.error(`Falha ao sincronizar ${c.name}: ${error.message}`);
+          continue;
+        }
+        setChars((list) =>
+          list.map((ch) =>
+            ch.id === c.sourceId
+              ? {
+                  ...ch,
+                  hp_current: c.hpCurrent,
+                  pa_current: c.paCurrent,
+                  sanity_current: c.sanityCurrent ?? ch.sanity_current,
+                  corruption: c.corruption ?? ch.corruption,
+                }
+              : ch,
+          ),
+        );
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [state.combatants, hydrated]);
+
 
   const order = useMemo(
     () => (state.started ? sortByInitiative(state.combatants) : state.combatants),
@@ -189,9 +263,33 @@ function Combate() {
       c.name,
       delta < 0 ? `sofre ${Math.abs(delta)} de dano` : `recupera ${delta} PV`,
       delta < 0 ? "damage" : "heal",
-      `PV ${hp}/${c.hpMax}${hp === 0 ? " · abatido" : ""}`,
+      `PV ${hp}/${c.hpMax}${hp === 0 ? " · abatido" : ""}${c.kind === "character" ? " · ficha sincronizada" : ""}`,
     );
   }
+
+  function applySanity(c: Combatant, delta: number) {
+    if (c.sanityCurrent === undefined || c.sanityMax === undefined) return;
+    const ps = Math.max(0, Math.min(c.sanityMax, c.sanityCurrent + delta));
+    update(c.id, { sanityCurrent: ps });
+    pushLog(
+      c.name,
+      delta < 0 ? `perde ${Math.abs(delta)} de Sanidade` : `recupera ${delta} PS`,
+      delta < 0 ? "damage" : "heal",
+      `PS ${ps}/${c.sanityMax} · ficha sincronizada`,
+    );
+  }
+
+  function applyCorruption(c: Combatant, delta: number) {
+    const value = Math.max(0, Math.min(100, (c.corruption ?? 0) + delta));
+    update(c.id, { corruption: value });
+    pushLog(
+      c.name,
+      delta > 0 ? `acumula ${delta} de Corrupção` : `purga ${Math.abs(delta)} de Corrupção`,
+      delta > 0 ? "damage" : "heal",
+      `Corrupção ${value}/100 · ficha sincronizada`,
+    );
+  }
+
 
   const filtered = CREATURES.filter((c) =>
     `${c.name} ${c.epithet}`.toLowerCase().includes(query.trim().toLowerCase()),
@@ -258,6 +356,8 @@ function Combate() {
               active={c.id === activeId}
               onAttack={(i) => attack(c, i)}
               onHp={(d) => applyHp(c, d)}
+              onSanity={(d) => applySanity(c, d)}
+              onCorruption={(d) => applyCorruption(c, d)}
               onPa={(d) =>
                 update(c.id, { paCurrent: Math.max(0, Math.min(c.paMax, c.paCurrent + d)) })
               }
@@ -350,6 +450,8 @@ function CombatantCard({
   active,
   onAttack,
   onHp,
+  onSanity,
+  onCorruption,
   onPa,
   onRemove,
 }: {
@@ -357,6 +459,8 @@ function CombatantCard({
   active: boolean;
   onAttack: (i: number) => void;
   onHp: (delta: number) => void;
+  onSanity: (delta: number) => void;
+  onCorruption: (delta: number) => void;
   onPa: (delta: number) => void;
   onRemove: () => void;
 }) {
@@ -442,6 +546,48 @@ function CombatantCard({
           </span>
         </div>
       </div>
+
+      {c.kind === "character" && (
+        <div className="mt-3 flex flex-wrap items-center gap-4 border-t border-white/5 pt-3 font-mono text-[11px] text-white/50">
+          {c.sanityCurrent !== undefined && c.sanityMax !== undefined && (
+            <span className="flex items-center gap-1">
+              <span>
+                PS {c.sanityCurrent}/{c.sanityMax}
+              </span>
+              <button
+                onClick={() => onSanity(-amount)}
+                className="rounded border border-corruption/40 px-2 py-0.5 text-corruption hover:bg-corruption/10"
+              >
+                −
+              </button>
+              <button
+                onClick={() => onSanity(amount)}
+                className="rounded border border-prismatic/40 px-2 py-0.5 text-prismatic hover:bg-prismatic/10"
+              >
+                +
+              </button>
+            </span>
+          )}
+          <span className="flex items-center gap-1">
+            <span>Corrupção {c.corruption ?? 0}/100</span>
+            <button
+              onClick={() => onCorruption(-1)}
+              className="rounded border border-white/15 px-2 py-0.5 text-white/60 hover:bg-white/5"
+            >
+              −
+            </button>
+            <button
+              onClick={() => onCorruption(1)}
+              className="rounded border border-corruption/40 px-2 py-0.5 text-corruption hover:bg-corruption/10"
+            >
+              +
+            </button>
+          </span>
+          <span className="text-[10px] uppercase tracking-widest text-ritual-gold/60">
+            ⟡ Ficha sincronizada
+          </span>
+        </div>
+      )}
 
       {c.attacks.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
