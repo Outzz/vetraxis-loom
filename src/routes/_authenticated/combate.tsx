@@ -53,6 +53,7 @@ function Combate() {
   const [query, setQuery] = useState("");
   const [hydrated, setHydrated] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
+  const syncedRef = useRef<Record<string, string>>({});
 
   useEffect(() => {
     const loaded = loadEncounter();
@@ -77,14 +78,86 @@ function Combate() {
 
     supabase
       .from("characters")
-      .select("id,name,concept,element,hp_current,hp_max,pa_current,pa_max,dex_score")
+      .select(
+        "id,name,concept,element,hp_current,hp_max,sanity_current,sanity_max,pa_current,pa_max,corruption,dex_score",
+      )
       .order("created_at", { ascending: false })
-      .then(({ data }) => setChars((data as CharacterLike[]) ?? []));
+      .then(({ data }) => {
+        const list = (data as CharacterLike[]) ?? [];
+        setChars(list);
+        // A ficha é a fonte da verdade ao abrir a mesa.
+        setState((s) => ({
+          ...s,
+          combatants: s.combatants.map((c) => {
+            if (c.kind !== "character") return c;
+            const ch = list.find((x) => x.id === c.sourceId);
+            if (!ch) return c;
+            const synced: Combatant = {
+              ...c,
+              hpCurrent: ch.hp_current,
+              hpMax: ch.hp_max,
+              sanityCurrent: ch.sanity_current ?? c.sanityCurrent,
+              sanityMax: ch.sanity_max ?? c.sanityMax,
+              paCurrent: ch.pa_current,
+              paMax: ch.pa_max,
+              corruption: ch.corruption ?? c.corruption,
+              defeated: ch.hp_current === 0,
+            };
+            syncedRef.current[c.sourceId] = resourceKey(synced);
+            return synced;
+          }),
+        }));
+      });
   }, []);
 
   useEffect(() => {
     if (hydrated) saveEncounter(state);
   }, [state, hydrated]);
+
+  // Sincroniza PV/PS/PA/Corrupção dos Portadores de volta para as fichas.
+  useEffect(() => {
+    if (!hydrated) return;
+    const pending = state.combatants.filter(
+      (c) => c.kind === "character" && syncedRef.current[c.sourceId] !== resourceKey(c),
+    );
+    if (pending.length === 0) return;
+
+    const timer = setTimeout(async () => {
+      for (const c of pending) {
+        const key = resourceKey(c);
+        syncedRef.current[c.sourceId] = key;
+        const patch: Record<string, number> = {
+          hp_current: c.hpCurrent,
+          pa_current: c.paCurrent,
+        };
+        if (c.sanityCurrent !== undefined) patch.sanity_current = c.sanityCurrent;
+        if (c.corruption !== undefined) patch.corruption = c.corruption;
+
+        const { error } = await supabase.from("characters").update(patch).eq("id", c.sourceId);
+        if (error) {
+          delete syncedRef.current[c.sourceId];
+          toast.error(`Falha ao sincronizar ${c.name}: ${error.message}`);
+          continue;
+        }
+        setChars((list) =>
+          list.map((ch) =>
+            ch.id === c.sourceId
+              ? {
+                  ...ch,
+                  hp_current: c.hpCurrent,
+                  pa_current: c.paCurrent,
+                  sanity_current: c.sanityCurrent ?? ch.sanity_current,
+                  corruption: c.corruption ?? ch.corruption,
+                }
+              : ch,
+          ),
+        );
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [state.combatants, hydrated]);
+
 
   const order = useMemo(
     () => (state.started ? sortByInitiative(state.combatants) : state.combatants),
