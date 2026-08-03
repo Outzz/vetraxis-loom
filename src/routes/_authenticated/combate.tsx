@@ -547,6 +547,48 @@ function CombatantCard({
         </div>
       </div>
 
+      {c.kind === "character" && (
+        <div className="mt-3 flex flex-wrap items-center gap-4 border-t border-white/5 pt-3 font-mono text-[11px] text-white/50">
+          {c.sanityCurrent !== undefined && c.sanityMax !== undefined && (
+            <span className="flex items-center gap-1">
+              <span>
+                PS {c.sanityCurrent}/{c.sanityMax}
+              </span>
+              <button
+                onClick={() => onSanity(-amount)}
+                className="rounded border border-corruption/40 px-2 py-0.5 text-corruption hover:bg-corruption/10"
+              >
+                −
+              </button>
+              <button
+                onClick={() => onSanity(amount)}
+                className="rounded border border-prismatic/40 px-2 py-0.5 text-prismatic hover:bg-prismatic/10"
+              >
+                +
+              </button>
+            </span>
+          )}
+          <span className="flex items-center gap-1">
+            <span>Corrupção {c.corruption ?? 0}/100</span>
+            <button
+              onClick={() => onCorruption(-1)}
+              className="rounded border border-white/15 px-2 py-0.5 text-white/60 hover:bg-white/5"
+            >
+              −
+            </button>
+            <button
+              onClick={() => onCorruption(1)}
+              className="rounded border border-corruption/40 px-2 py-0.5 text-corruption hover:bg-corruption/10"
+            >
+              +
+            </button>
+          </span>
+          <span className="text-[10px] uppercase tracking-widest text-ritual-gold/60">
+            ⟡ Ficha sincronizada
+          </span>
+        </div>
+      )}
+
       {c.attacks.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
           {c.attacks.map((a, i) => (
