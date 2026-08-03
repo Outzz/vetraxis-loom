@@ -356,6 +356,8 @@ function Combate() {
               active={c.id === activeId}
               onAttack={(i) => attack(c, i)}
               onHp={(d) => applyHp(c, d)}
+              onSanity={(d) => applySanity(c, d)}
+              onCorruption={(d) => applyCorruption(c, d)}
               onPa={(d) =>
                 update(c.id, { paCurrent: Math.max(0, Math.min(c.paMax, c.paCurrent + d)) })
               }
