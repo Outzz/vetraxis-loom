@@ -163,8 +163,11 @@ export interface CharacterLike {
   element?: CosmicElement | null;
   hp_current: number;
   hp_max: number;
+  sanity_current?: number;
+  sanity_max?: number;
   pa_current: number;
   pa_max: number;
+  corruption?: number;
   dex_score: number;
 }
 
@@ -187,16 +190,25 @@ export function combatantFromCharacter(
     color: elementColor,
     hpMax: ch.hp_max,
     hpCurrent: ch.hp_current,
+    sanityMax: ch.sanity_max ?? undefined,
+    sanityCurrent: ch.sanity_current ?? undefined,
     ca: 10 + dex,
     paMax: ch.pa_max,
     paCurrent: ch.pa_current,
     initiativeFormula: `1d20${dex >= 0 ? `+${dex}` : dex}`,
     initiative: null,
+    corruption: ch.corruption ?? 0,
     attacks: [],
     conditions: [],
     defeated: false,
   };
 }
+
+/** Chave de sincronização — muda quando algum recurso persistível muda. */
+export function resourceKey(c: Combatant) {
+  return `${c.hpCurrent}|${c.sanityCurrent ?? "-"}|${c.paCurrent}|${c.corruption ?? "-"}`;
+}
+
 
 /* ---------------- fila de envio (Bestiário → Combate) ---------------- */
 
