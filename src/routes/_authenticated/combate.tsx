@@ -11,6 +11,7 @@ import {
   drainQueue,
   loadEncounter,
   logEntry,
+  resourceKey,
   rollAttack,
   rollFormula,
   saveEncounter,
