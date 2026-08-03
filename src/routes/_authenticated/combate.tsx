@@ -126,12 +126,12 @@ function Combate() {
       for (const c of pending) {
         const key = resourceKey(c);
         syncedRef.current[c.sourceId] = key;
-        const patch: Record<string, number> = {
+        const patch = {
           hp_current: c.hpCurrent,
           pa_current: c.paCurrent,
+          ...(c.sanityCurrent !== undefined ? { sanity_current: c.sanityCurrent } : {}),
+          ...(c.corruption !== undefined ? { corruption: c.corruption } : {}),
         };
-        if (c.sanityCurrent !== undefined) patch.sanity_current = c.sanityCurrent;
-        if (c.corruption !== undefined) patch.corruption = c.corruption;
 
         const { error } = await supabase.from("characters").update(patch).eq("id", c.sourceId);
         if (error) {
