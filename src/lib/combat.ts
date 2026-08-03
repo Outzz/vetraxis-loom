@@ -21,6 +21,8 @@ export interface Combatant {
   color?: string;
   hpMax: number;
   hpCurrent: number;
+  sanityMax?: number;
+  sanityCurrent?: number;
   ca: number;
   paMax: number;
   paCurrent: number;
