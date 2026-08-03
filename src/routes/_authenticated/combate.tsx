@@ -450,6 +450,8 @@ function CombatantCard({
   active,
   onAttack,
   onHp,
+  onSanity,
+  onCorruption,
   onPa,
   onRemove,
 }: {
@@ -457,6 +459,8 @@ function CombatantCard({
   active: boolean;
   onAttack: (i: number) => void;
   onHp: (delta: number) => void;
+  onSanity: (delta: number) => void;
+  onCorruption: (delta: number) => void;
   onPa: (delta: number) => void;
   onRemove: () => void;
 }) {
