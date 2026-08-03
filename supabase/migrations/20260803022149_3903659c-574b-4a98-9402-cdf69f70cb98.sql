@@ -1,0 +1,10 @@
+GRANT EXECUTE ON FUNCTION public.is_campaign_member(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_campaign_master(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.shares_campaign_with(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.join_campaign_by_code(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_campaign_member(uuid, uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION public.is_campaign_master(uuid, uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION public.shares_campaign_with(uuid, uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO service_role;
+GRANT EXECUTE ON FUNCTION public.join_campaign_by_code(text) TO service_role;
