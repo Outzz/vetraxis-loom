@@ -263,9 +263,33 @@ function Combate() {
       c.name,
       delta < 0 ? `sofre ${Math.abs(delta)} de dano` : `recupera ${delta} PV`,
       delta < 0 ? "damage" : "heal",
-      `PV ${hp}/${c.hpMax}${hp === 0 ? " · abatido" : ""}`,
+      `PV ${hp}/${c.hpMax}${hp === 0 ? " · abatido" : ""}${c.kind === "character" ? " · ficha sincronizada" : ""}`,
     );
   }
+
+  function applySanity(c: Combatant, delta: number) {
+    if (c.sanityCurrent === undefined || c.sanityMax === undefined) return;
+    const ps = Math.max(0, Math.min(c.sanityMax, c.sanityCurrent + delta));
+    update(c.id, { sanityCurrent: ps });
+    pushLog(
+      c.name,
+      delta < 0 ? `perde ${Math.abs(delta)} de Sanidade` : `recupera ${delta} PS`,
+      delta < 0 ? "damage" : "heal",
+      `PS ${ps}/${c.sanityMax} · ficha sincronizada`,
+    );
+  }
+
+  function applyCorruption(c: Combatant, delta: number) {
+    const value = Math.max(0, Math.min(100, (c.corruption ?? 0) + delta));
+    update(c.id, { corruption: value });
+    pushLog(
+      c.name,
+      delta > 0 ? `acumula ${delta} de Corrupção` : `purga ${Math.abs(delta)} de Corrupção`,
+      delta > 0 ? "damage" : "heal",
+      `Corrupção ${value}/100 · ficha sincronizada`,
+    );
+  }
+
 
   const filtered = CREATURES.filter((c) =>
     `${c.name} ${c.epithet}`.toLowerCase().includes(query.trim().toLowerCase()),
