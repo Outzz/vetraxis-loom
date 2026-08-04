@@ -1,0 +1,10 @@
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.characters TO authenticated;
+GRANT ALL ON public.characters TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.campaigns TO authenticated;
+GRANT ALL ON public.campaigns TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.campaign_members TO authenticated;
+GRANT ALL ON public.campaign_members TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO authenticated;
+GRANT ALL ON public.profiles TO service_role;
+GRANT SELECT ON public.user_roles TO authenticated;
+GRANT ALL ON public.user_roles TO service_role;
