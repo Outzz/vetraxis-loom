@@ -17,11 +17,11 @@ import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCombateRouteImport } from './routes/_authenticated/combate'
 import { Route as AuthenticatedCodiceRouteImport } from './routes/_authenticated/codice'
-import { Route as AuthenticatedCharactersRouteImport } from './routes/_authenticated/characters'
-import { Route as AuthenticatedCampaignsRouteImport } from './routes/_authenticated/campaigns'
 import { Route as AuthenticatedBestiarioRouteImport } from './routes/_authenticated/bestiario'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
+import { Route as AuthenticatedCharactersIndexRouteImport } from './routes/_authenticated/characters.index'
+import { Route as AuthenticatedCampaignsIndexRouteImport } from './routes/_authenticated/campaigns.index'
 import { Route as AuthenticatedCharactersNewRouteImport } from './routes/_authenticated/characters.new'
 import { Route as AuthenticatedCharactersIdRouteImport } from './routes/_authenticated/characters.$id'
 import { Route as AuthenticatedCampaignsIdRouteImport } from './routes/_authenticated/campaigns.$id'
@@ -67,16 +67,6 @@ const AuthenticatedCodiceRoute = AuthenticatedCodiceRouteImport.update({
   path: '/codice',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedCharactersRoute = AuthenticatedCharactersRouteImport.update({
-  id: '/characters',
-  path: '/characters',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedCampaignsRoute = AuthenticatedCampaignsRouteImport.update({
-  id: '/campaigns',
-  path: '/campaigns',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedBestiarioRoute = AuthenticatedBestiarioRouteImport.update({
   id: '/bestiario',
   path: '/bestiario',
@@ -94,23 +84,35 @@ const Char91DotmcpChar93ListToolsRoute =
     path: '/.mcp/list-tools',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedCharactersIndexRoute =
+  AuthenticatedCharactersIndexRouteImport.update({
+    id: '/characters/',
+    path: '/characters/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCampaignsIndexRoute =
+  AuthenticatedCampaignsIndexRouteImport.update({
+    id: '/campaigns/',
+    path: '/campaigns/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCharactersNewRoute =
   AuthenticatedCharactersNewRouteImport.update({
-    id: '/new',
-    path: '/new',
-    getParentRoute: () => AuthenticatedCharactersRoute,
+    id: '/characters/new',
+    path: '/characters/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedCharactersIdRoute =
   AuthenticatedCharactersIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => AuthenticatedCharactersRoute,
+    id: '/characters/$id',
+    path: '/characters/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedCampaignsIdRoute =
   AuthenticatedCampaignsIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => AuthenticatedCampaignsRoute,
+    id: '/campaigns/$id',
+    path: '/campaigns/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
   Char91DotmcpChar93InvokeToolToolRouteImport.update({
@@ -131,8 +133,6 @@ export interface FileRoutesByFullPath {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/bestiario': typeof AuthenticatedBestiarioRoute
-  '/campaigns': typeof AuthenticatedCampaignsRouteWithChildren
-  '/characters': typeof AuthenticatedCharactersRouteWithChildren
   '/codice': typeof AuthenticatedCodiceRoute
   '/combate': typeof AuthenticatedCombateRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -142,6 +142,8 @@ export interface FileRoutesByFullPath {
   '/campaigns/$id': typeof AuthenticatedCampaignsIdRoute
   '/characters/$id': typeof AuthenticatedCharactersIdRoute
   '/characters/new': typeof AuthenticatedCharactersNewRoute
+  '/campaigns/': typeof AuthenticatedCampaignsIndexRoute
+  '/characters/': typeof AuthenticatedCharactersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -150,8 +152,6 @@ export interface FileRoutesByTo {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/bestiario': typeof AuthenticatedBestiarioRoute
-  '/campaigns': typeof AuthenticatedCampaignsRouteWithChildren
-  '/characters': typeof AuthenticatedCharactersRouteWithChildren
   '/codice': typeof AuthenticatedCodiceRoute
   '/combate': typeof AuthenticatedCombateRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -161,6 +161,8 @@ export interface FileRoutesByTo {
   '/campaigns/$id': typeof AuthenticatedCampaignsIdRoute
   '/characters/$id': typeof AuthenticatedCharactersIdRoute
   '/characters/new': typeof AuthenticatedCharactersNewRoute
+  '/campaigns': typeof AuthenticatedCampaignsIndexRoute
+  '/characters': typeof AuthenticatedCharactersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -171,8 +173,6 @@ export interface FileRoutesById {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/bestiario': typeof AuthenticatedBestiarioRoute
-  '/_authenticated/campaigns': typeof AuthenticatedCampaignsRouteWithChildren
-  '/_authenticated/characters': typeof AuthenticatedCharactersRouteWithChildren
   '/_authenticated/codice': typeof AuthenticatedCodiceRoute
   '/_authenticated/combate': typeof AuthenticatedCombateRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -182,6 +182,8 @@ export interface FileRoutesById {
   '/_authenticated/campaigns/$id': typeof AuthenticatedCampaignsIdRoute
   '/_authenticated/characters/$id': typeof AuthenticatedCharactersIdRoute
   '/_authenticated/characters/new': typeof AuthenticatedCharactersNewRoute
+  '/_authenticated/campaigns/': typeof AuthenticatedCampaignsIndexRoute
+  '/_authenticated/characters/': typeof AuthenticatedCharactersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -192,8 +194,6 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/bestiario'
-    | '/campaigns'
-    | '/characters'
     | '/codice'
     | '/combate'
     | '/dashboard'
@@ -203,6 +203,8 @@ export interface FileRouteTypes {
     | '/campaigns/$id'
     | '/characters/$id'
     | '/characters/new'
+    | '/campaigns/'
+    | '/characters/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -211,8 +213,6 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/bestiario'
-    | '/campaigns'
-    | '/characters'
     | '/codice'
     | '/combate'
     | '/dashboard'
@@ -222,6 +222,8 @@ export interface FileRouteTypes {
     | '/campaigns/$id'
     | '/characters/$id'
     | '/characters/new'
+    | '/campaigns'
+    | '/characters'
   id:
     | '__root__'
     | '/'
@@ -231,8 +233,6 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/bestiario'
-    | '/_authenticated/campaigns'
-    | '/_authenticated/characters'
     | '/_authenticated/codice'
     | '/_authenticated/combate'
     | '/_authenticated/dashboard'
@@ -242,6 +242,8 @@ export interface FileRouteTypes {
     | '/_authenticated/campaigns/$id'
     | '/_authenticated/characters/$id'
     | '/_authenticated/characters/new'
+    | '/_authenticated/campaigns/'
+    | '/_authenticated/characters/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -313,20 +315,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCodiceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/characters': {
-      id: '/_authenticated/characters'
-      path: '/characters'
-      fullPath: '/characters'
-      preLoaderRoute: typeof AuthenticatedCharactersRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/campaigns': {
-      id: '/_authenticated/campaigns'
-      path: '/campaigns'
-      fullPath: '/campaigns'
-      preLoaderRoute: typeof AuthenticatedCampaignsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/bestiario': {
       id: '/_authenticated/bestiario'
       path: '/bestiario'
@@ -348,26 +336,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/characters/': {
+      id: '/_authenticated/characters/'
+      path: '/characters'
+      fullPath: '/characters/'
+      preLoaderRoute: typeof AuthenticatedCharactersIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/campaigns/': {
+      id: '/_authenticated/campaigns/'
+      path: '/campaigns'
+      fullPath: '/campaigns/'
+      preLoaderRoute: typeof AuthenticatedCampaignsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/characters/new': {
       id: '/_authenticated/characters/new'
-      path: '/new'
+      path: '/characters/new'
       fullPath: '/characters/new'
       preLoaderRoute: typeof AuthenticatedCharactersNewRouteImport
-      parentRoute: typeof AuthenticatedCharactersRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/characters/$id': {
       id: '/_authenticated/characters/$id'
-      path: '/$id'
+      path: '/characters/$id'
       fullPath: '/characters/$id'
       preLoaderRoute: typeof AuthenticatedCharactersIdRouteImport
-      parentRoute: typeof AuthenticatedCharactersRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/campaigns/$id': {
       id: '/_authenticated/campaigns/$id'
-      path: '/$id'
+      path: '/campaigns/$id'
       fullPath: '/campaigns/$id'
       preLoaderRoute: typeof AuthenticatedCampaignsIdRouteImport
-      parentRoute: typeof AuthenticatedCampaignsRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/.mcp/invoke-tool/$tool': {
       id: '/.mcp/invoke-tool/$tool'
@@ -386,54 +388,30 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthenticatedCampaignsRouteChildren {
-  AuthenticatedCampaignsIdRoute: typeof AuthenticatedCampaignsIdRoute
-}
-
-const AuthenticatedCampaignsRouteChildren: AuthenticatedCampaignsRouteChildren =
-  {
-    AuthenticatedCampaignsIdRoute: AuthenticatedCampaignsIdRoute,
-  }
-
-const AuthenticatedCampaignsRouteWithChildren =
-  AuthenticatedCampaignsRoute._addFileChildren(
-    AuthenticatedCampaignsRouteChildren,
-  )
-
-interface AuthenticatedCharactersRouteChildren {
-  AuthenticatedCharactersIdRoute: typeof AuthenticatedCharactersIdRoute
-  AuthenticatedCharactersNewRoute: typeof AuthenticatedCharactersNewRoute
-}
-
-const AuthenticatedCharactersRouteChildren: AuthenticatedCharactersRouteChildren =
-  {
-    AuthenticatedCharactersIdRoute: AuthenticatedCharactersIdRoute,
-    AuthenticatedCharactersNewRoute: AuthenticatedCharactersNewRoute,
-  }
-
-const AuthenticatedCharactersRouteWithChildren =
-  AuthenticatedCharactersRoute._addFileChildren(
-    AuthenticatedCharactersRouteChildren,
-  )
-
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedBestiarioRoute: typeof AuthenticatedBestiarioRoute
-  AuthenticatedCampaignsRoute: typeof AuthenticatedCampaignsRouteWithChildren
-  AuthenticatedCharactersRoute: typeof AuthenticatedCharactersRouteWithChildren
   AuthenticatedCodiceRoute: typeof AuthenticatedCodiceRoute
   AuthenticatedCombateRoute: typeof AuthenticatedCombateRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedCampaignsIdRoute: typeof AuthenticatedCampaignsIdRoute
+  AuthenticatedCharactersIdRoute: typeof AuthenticatedCharactersIdRoute
+  AuthenticatedCharactersNewRoute: typeof AuthenticatedCharactersNewRoute
+  AuthenticatedCampaignsIndexRoute: typeof AuthenticatedCampaignsIndexRoute
+  AuthenticatedCharactersIndexRoute: typeof AuthenticatedCharactersIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBestiarioRoute: AuthenticatedBestiarioRoute,
-  AuthenticatedCampaignsRoute: AuthenticatedCampaignsRouteWithChildren,
-  AuthenticatedCharactersRoute: AuthenticatedCharactersRouteWithChildren,
   AuthenticatedCodiceRoute: AuthenticatedCodiceRoute,
   AuthenticatedCombateRoute: AuthenticatedCombateRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedCampaignsIdRoute: AuthenticatedCampaignsIdRoute,
+  AuthenticatedCharactersIdRoute: AuthenticatedCharactersIdRoute,
+  AuthenticatedCharactersNewRoute: AuthenticatedCharactersNewRoute,
+  AuthenticatedCampaignsIndexRoute: AuthenticatedCampaignsIndexRoute,
+  AuthenticatedCharactersIndexRoute: AuthenticatedCharactersIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

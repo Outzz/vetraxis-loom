@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ELEMENTS, RELICS, corruptionTier, type CosmicElement, type Relic } from "@/lib/game-data";
 
-export const Route = createFileRoute("/_authenticated/characters")({
+export const Route = createFileRoute("/_authenticated/characters/")({
   head: () => ({
     meta: [
       { title: "Portadores — Anomalia Cósmica" },
