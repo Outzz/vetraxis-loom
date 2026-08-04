@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { BookOpen, Copy, Plus, Shield, Swords, UserRoundPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -152,15 +153,22 @@ function CampaignDetail() {
         ← Campanhas
       </Link>
 
+      <div className="mt-8 flex flex-wrap gap-2 border-b border-white/10 pb-6">
+        <Link to="/characters/new" search={{ campaign: campaign.id }} className="flex items-center gap-2 rounded-md bg-prismatic px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-prismatic/80"><UserRoundPlus className="size-4" />Criar Portador</Link>
+        <Link to="/combate" className="flex items-center gap-2 rounded-md border border-prismatic/50 px-4 py-2.5 text-xs text-foreground hover:bg-prismatic/10"><Swords className="size-4" />Iniciar Combate</Link>
+        <Link to="/bestiario" className="flex items-center gap-2 rounded-md border border-white/10 px-4 py-2.5 text-xs text-white/65 hover:border-white/30 hover:text-foreground"><BookOpen className="size-4" />Bestiário</Link>
+      </div>
+
       <header
-        className="mt-4 flex flex-wrap items-start justify-between gap-6 border-b border-white/10 pb-8"
+        className="mt-8 grid gap-8 border-b border-white/10 pb-10 md:grid-cols-[280px_1fr_auto]"
         style={{ animation: "fade-up 0.6s var(--ease-out-expo) both" }}
       >
-        <div className="flex-1 min-w-0">
+        <div className="campaign-sigil min-h-48 rounded-md border border-white/10 bg-void-blue" aria-hidden="true" />
+        <div className="min-w-0 py-2">
           <p className="ritual-eyebrow">
             {isMaster ? "Mestre desta Crônica" : "Portador participante"}
           </p>
-          <h1 className="ritual-title mt-2 text-5xl text-foreground">
+          <h1 className="ritual-title mt-2 text-4xl text-foreground md:text-5xl">
             {campaign.name}
           </h1>
           {campaign.synopsis && (
@@ -173,7 +181,7 @@ function CampaignDetail() {
             className="rounded-md border border-ritual-gold/30 bg-ritual-gold/5 px-4 py-2 font-mono text-sm text-ritual-gold hover:bg-ritual-gold/10"
             title="Copiar código de convite"
           >
-            {campaign.invite_code}
+              <Copy className="mr-2 inline size-3.5" />{campaign.invite_code}
           </button>
           {!isMaster && (
             <button
@@ -187,7 +195,7 @@ function CampaignDetail() {
       </header>
 
       {campaign.description && (
-        <section className="mt-8 glass-panel rounded-2xl p-6">
+        <section className="mt-8 border-l-2 border-prismatic/50 py-2 pl-6">
           <p className="ritual-eyebrow mb-3">Introdução</p>
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/70">
             {campaign.description}
@@ -195,9 +203,15 @@ function CampaignDetail() {
         </section>
       )}
 
-      <section className="mt-10">
+      <nav className="mt-10 flex gap-8 border-b border-white/10 text-xs font-semibold uppercase tracking-widest">
+        <span className="border-b-2 border-prismatic pb-3 text-foreground">Portadores</span>
+        <span className="pb-3 text-white/35">Jogadores</span>
+        <Link to="/combate" className="pb-3 text-white/35 hover:text-foreground">Combates</Link>
+      </nav>
+
+      <section className="mt-8">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="ritual-title text-2xl text-foreground">Portadores</h2>
+          <h2 className="ritual-title text-2xl text-foreground">Jogadores vinculados</h2>
           <span className="font-mono text-xs text-white/40">{members.length}</span>
         </div>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -263,7 +277,7 @@ function CampaignDetail() {
         </div>
       </section>
 
-      <section className="mt-10">
+      <section className="mt-12">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="ritual-title text-2xl text-foreground">Personagens ativos</h2>
           <Link
@@ -271,7 +285,7 @@ function CampaignDetail() {
             search={{ campaign: campaign.id }}
             className="rounded-md border border-ritual-gold/40 px-4 py-2 text-[10px] uppercase tracking-widest text-ritual-gold hover:bg-ritual-gold/10"
           >
-            + Novo Portador
+            <Plus className="mr-1 inline size-3" /> Novo Portador
           </Link>
         </div>
         {characters.length === 0 ? (
