@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { BookOpen, Copy, Plus, Shield, Swords, UserRoundPlus } from "lucide-react";
+import { BookOpen, Copy, Plus, Swords, UserRoundPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
