@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { CalendarDays, ChevronRight, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +28,7 @@ type Campaign = {
   status: "active" | "paused" | "archived";
   master_id: string;
   created_at: string;
+  banner_url: string | null;
 };
 
 function CampaignsPage() {
@@ -56,7 +58,7 @@ function CampaignsPage() {
   return (
     <div className="mx-auto min-h-screen max-w-6xl px-6 py-16">
       <header
-        className="mb-12 flex flex-wrap items-end justify-between gap-6"
+        className="mb-10 flex flex-wrap items-end justify-between gap-6 border-b border-white/10 pb-8"
         style={{ animation: "fade-up 0.8s var(--ease-out-expo) both" }}
       >
         <div>
@@ -66,8 +68,9 @@ function CampaignsPage() {
           >
             ← Portal
           </Link>
-          <p className="ritual-eyebrow mt-2">Ecos da Eternidade</p>
-          <h1 className="ritual-title mt-2 text-5xl text-foreground">Campanhas</h1>
+          <p className="ritual-eyebrow mt-3">Ecos da Eternidade</p>
+          <h1 className="ritual-title mt-2 text-5xl text-foreground">Suas Campanhas</h1>
+          <p className="mt-2 text-sm text-white/45">Crônicas mestradas e jornadas das quais você participa.</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <button
@@ -80,7 +83,7 @@ function CampaignsPage() {
             onClick={() => setShowCreate(true)}
             className="rounded-md bg-ritual-gold px-5 py-2.5 text-xs uppercase tracking-widest text-abyss transition-colors hover:bg-ritual-gold/90"
           >
-            + Nova Campanha
+            Nova Campanha
           </button>
         </div>
       </header>
@@ -99,7 +102,12 @@ function CampaignsPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div>
+          <div className="mb-5 flex items-center gap-3">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-foreground">Campanhas</h2>
+            <span className="font-mono text-xs text-white/35">{campaigns.length}</span>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2">
           {campaigns.map((c, i) => (
             <CampaignCard
               key={c.id}
@@ -108,6 +116,7 @@ function CampaignsPage() {
               index={i}
             />
           ))}
+          </div>
         </div>
       )}
 
@@ -146,35 +155,36 @@ function CampaignCard({
     <Link
       to="/campaigns/$id"
       params={{ id: campaign.id }}
-      className="group glass-panel block rounded-2xl p-6 transition-all hover:border-ritual-gold/40"
+      className="group block overflow-hidden rounded-lg border border-white/10 bg-card transition-all hover:-translate-y-0.5 hover:border-prismatic/50"
       style={{
         animation: "fade-up 0.8s var(--ease-out-expo) both",
         animationDelay: `${index * 80}ms`,
       }}
     >
-      <div className="mb-3 flex items-center justify-between">
-        <span
-          className={`inline-block rounded-full px-2 py-0.5 text-[9px] uppercase tracking-widest ${
-            isMaster
-              ? "bg-ritual-gold/15 text-ritual-gold"
-              : "bg-prismatic/15 text-prismatic"
-          }`}
-        >
-          {isMaster ? "Mestre" : "Portador"}
-        </span>
-        <span className="font-mono text-[10px] uppercase text-white/40">
-          {campaign.invite_code}
+      <div className="relative h-44 overflow-hidden border-b border-white/10 bg-void-blue">
+        {campaign.banner_url ? (
+          <img src={campaign.banner_url} alt="" className="h-full w-full object-cover opacity-65 transition-transform duration-700 group-hover:scale-105" />
+        ) : (
+          <div className="absolute inset-0 campaign-sigil" aria-hidden="true" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+        <span className={`absolute left-4 top-4 rounded-sm border px-2 py-1 text-[9px] font-semibold uppercase tracking-widest ${isMaster ? "border-ritual-gold/40 bg-abyss/80 text-ritual-gold" : "border-prismatic/40 bg-abyss/80 text-prismatic"}`}>
+          {isMaster ? "Mestre" : "Jogador"}
         </span>
       </div>
-      <h3 className="ritual-title text-2xl text-foreground group-hover:text-ritual-gold">
-        {campaign.name}
-      </h3>
-      {campaign.synopsis && (
-        <p className="mt-2 line-clamp-3 text-sm text-white/50">{campaign.synopsis}</p>
-      )}
-      <p className="mt-4 text-[10px] uppercase tracking-widest text-white/30">
-        Status · {campaign.status}
-      </p>
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h3 className="truncate ritual-title text-2xl text-foreground group-hover:text-ritual-gold">{campaign.name}</h3>
+            <p className="mt-1 line-clamp-2 min-h-10 text-sm text-white/45">{campaign.synopsis || "Uma nova crônica aguarda seus primeiros ecos."}</p>
+          </div>
+          <ChevronRight className="mt-1 size-5 shrink-0 text-white/30 transition-transform group-hover:translate-x-1 group-hover:text-ritual-gold" />
+        </div>
+        <div className="mt-5 flex items-center justify-between border-t border-white/5 pt-4 text-[10px] uppercase tracking-widest text-white/35">
+          <span className="flex items-center gap-1.5"><CalendarDays className="size-3.5" />{new Intl.DateTimeFormat("pt-BR").format(new Date(campaign.created_at))}</span>
+          <span className="flex items-center gap-1.5"><Users className="size-3.5" />{campaign.status === "active" ? "Ativa" : campaign.status}</span>
+        </div>
+      </div>
     </Link>
   );
 }

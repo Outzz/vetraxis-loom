@@ -105,15 +105,6 @@ function Dashboard() {
       glyph: <div className="size-1.5 rounded-full bg-prismatic" />,
     },
     {
-      key: "reliquias",
-      title: "Relíquias",
-      desc: "",
-      size: "square",
-      to: "/codice",
-      meta: "7 deuses",
-      glyph: <div className="h-px w-4 bg-ritual-gold" />,
-    },
-    {
       key: "combate",
       title: "Combate",
       desc: "",

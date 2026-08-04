@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -65,6 +65,16 @@ function NewCharacter() {
     per: 10,
   });
   const [saving, setSaving] = useState(false);
+  const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
+  const [campaignId, setCampaignId] = useState(campaign ?? "");
+
+  useEffect(() => {
+    supabase
+      .from("campaigns")
+      .select("id, name")
+      .order("name")
+      .then(({ data }) => setCampaigns(data ?? []));
+  }, []);
 
   const spent = useMemo(
     () =>
@@ -107,8 +117,9 @@ function NewCharacter() {
       return;
     }
     setSaving(true);
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) {
+    const { data: u, error: authError } = await supabase.auth.getUser();
+    if (authError || !u.user) {
+      toast.error("Sua sessão expirou. Entre novamente para criar um Portador.");
       setSaving(false);
       return;
     }
@@ -116,10 +127,10 @@ function NewCharacter() {
       .from("characters")
       .insert({
         owner_id: u.user.id,
-        campaign_id: campaign ?? null,
-        name,
-        concept,
-        origin,
+        campaign_id: campaignId || null,
+        name: name.trim(),
+        concept: concept.trim() || null,
+        origin: origin.trim() || null,
         element,
         relic: relic || null,
         level: 1,
@@ -140,7 +151,7 @@ function NewCharacter() {
       .single();
     setSaving(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(error.code === "42501" ? "Você não tem permissão para criar este Portador nesta campanha." : `Não foi possível criar o Portador: ${error.message}`);
       return;
     }
     toast.success("Portador manifestado.");
@@ -172,6 +183,13 @@ function NewCharacter() {
             <FormField label="Origem" value={origin} onChange={setOrigin} placeholder="Cidade cósmica de Aetheris" />
           </div>
           <FormField label="Conceito" value={concept} onChange={setConcept} placeholder="Investigador atormentado por visões" />
+          <div>
+            <label htmlFor="character-campaign" className="ml-1 text-[10px] uppercase tracking-widest text-white/40">Campanha (opcional)</label>
+            <select id="character-campaign" value={campaignId} onChange={(e) => setCampaignId(e.target.value)} className="mt-1.5 w-full rounded-lg border border-white/5 bg-abyss px-4 py-3 text-sm text-foreground focus:border-prismatic/40 focus:outline-none">
+              <option value="">Portador independente</option>
+              {campaigns.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+          </div>
         </section>
 
         <section className="glass-panel space-y-4 rounded-2xl p-6">
@@ -355,10 +373,11 @@ function FormField({
 }) {
   return (
     <div>
-      <label className="ml-1 text-[10px] uppercase tracking-widest text-white/40">
+      <label htmlFor={`field-${label}`} className="ml-1 text-[10px] uppercase tracking-widest text-white/40">
         {label}
       </label>
       <input
+        id={`field-${label}`}
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}

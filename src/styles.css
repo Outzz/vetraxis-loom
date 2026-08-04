@@ -220,3 +220,11 @@
   letter-spacing: 0.4em;
   color: var(--color-ritual-gold);
 }
+
+@utility campaign-sigil {
+  background-image:
+    radial-gradient(circle at center, transparent 0 16%, color-mix(in oklab, var(--prismatic) 45%, transparent) 17% 18%, transparent 19% 30%, color-mix(in oklab, var(--ritual-gold) 28%, transparent) 31% 32%, transparent 33%),
+    repeating-conic-gradient(from 12deg at center, color-mix(in oklab, var(--prismatic) 18%, transparent) 0deg 2deg, transparent 2deg 30deg),
+    radial-gradient(circle at 50% 45%, color-mix(in oklab, var(--prismatic) 30%, transparent), transparent 48%),
+    linear-gradient(135deg, var(--void-blue), var(--abyss));
+}
