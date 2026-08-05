@@ -312,22 +312,16 @@ export function corruptionTier(value: number) {
   return CORRUPTION_TIERS.find((t) => value <= t.max) ?? CORRUPTION_TIERS[0];
 }
 
-// Perícias padrão do livro
+// Perícias oficiais (Cap. 4.3)
 export const SKILLS: { key: string; name: string; attr: AttributeKey }[] = [
+  { key: "luta", name: "Luta", attr: "str" },
   { key: "atletismo", name: "Atletismo", attr: "str" },
-  { key: "acrobacia", name: "Acrobacia", attr: "dex" },
   { key: "furtividade", name: "Furtividade", attr: "dex" },
-  { key: "prestidigitacao", name: "Prestidigitação", attr: "dex" },
-  { key: "arcano", name: "Arcano", attr: "int" },
-  { key: "investigacao", name: "Investigação", attr: "int" },
-  { key: "medicina", name: "Medicina", attr: "int" },
-  { key: "ritual", name: "Ritual", attr: "int" },
-  { key: "sobrevivencia", name: "Sobrevivência", attr: "res" },
-  { key: "intimidacao", name: "Intimidação", attr: "cha" },
+  { key: "mira", name: "Mira", attr: "dex" },
+  { key: "ocultismo", name: "Ocultismo", attr: "int" },
+  { key: "ritualismo", name: "Ritualismo", attr: "int" },
   { key: "persuasao", name: "Persuasão", attr: "cha" },
-  { key: "enganacao", name: "Enganação", attr: "cha" },
-  { key: "percepcao", name: "Percepção", attr: "per" },
-  { key: "intuicao", name: "Intuição", attr: "per" },
+  { key: "vontade", name: "Resistência/Vontade", attr: "res" },
 ];
 
 export const DIFFICULTIES = [
