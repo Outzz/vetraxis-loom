@@ -139,6 +139,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
+      <FloatingDice />
       <Toaster
         theme="dark"
         position="top-center"
