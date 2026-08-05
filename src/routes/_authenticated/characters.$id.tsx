@@ -531,7 +531,7 @@ function CharacterSheet() {
 
         {/* Sidebar */}
         <aside className="space-y-4">
-          <DiceRoller compact />
+          
           <div className="glass-panel rounded-2xl p-4">
             <div className="mb-2 flex items-center justify-between">
               <p className="ritual-eyebrow">Registro do Ritual</p>
