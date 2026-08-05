@@ -89,6 +89,7 @@ export type Database = {
         Row: {
           campaign_id: string | null
           cha_score: number
+          character_class: string | null
           concept: string | null
           corruption: number
           created_at: string
@@ -117,11 +118,14 @@ export type Database = {
           scars: Json
           skills: Json
           str_score: number
+          track: string | null
           updated_at: string
+          xp: number
         }
         Insert: {
           campaign_id?: string | null
           cha_score?: number
+          character_class?: string | null
           concept?: string | null
           corruption?: number
           created_at?: string
@@ -150,11 +154,14 @@ export type Database = {
           scars?: Json
           skills?: Json
           str_score?: number
+          track?: string | null
           updated_at?: string
+          xp?: number
         }
         Update: {
           campaign_id?: string | null
           cha_score?: number
+          character_class?: string | null
           concept?: string | null
           corruption?: number
           created_at?: string
@@ -183,7 +190,9 @@ export type Database = {
           scars?: Json
           skills?: Json
           str_score?: number
+          track?: string | null
           updated_at?: string
+          xp?: number
         }
         Relationships: [
           {

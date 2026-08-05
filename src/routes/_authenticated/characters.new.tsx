@@ -5,13 +5,18 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ATTRIBUTES,
+  ATTR_MAX_START,
+  ATTR_POINTS,
+  ATTR_START,
+  CLASSES,
   ELEMENTS,
   RELICS,
-  attrModifier,
+  defenseValue,
   maxHP,
   maxPA,
   maxSanity,
   type AttributeKey,
+  type CharacterClass,
   type CosmicElement,
   type Relic,
 } from "@/lib/game-data";
@@ -34,18 +39,7 @@ export const Route = createFileRoute("/_authenticated/characters/new")({
   component: NewCharacter,
 });
 
-// Point-buy: 27 pontos, começa em 8, custos crescentes
-const COSTS: Record<number, number> = {
-  8: 0,
-  9: 1,
-  10: 2,
-  11: 3,
-  12: 4,
-  13: 5,
-  14: 7,
-  15: 9,
-};
-const BASE_POOL = 27;
+const ATTR_KEYS = Object.keys(ATTRIBUTES) as AttributeKey[];
 
 function NewCharacter() {
   const navigate = useNavigate();
@@ -56,13 +50,13 @@ function NewCharacter() {
   const [origin, setOrigin] = useState("");
   const [element, setElement] = useState<CosmicElement | "">("");
   const [relic, setRelic] = useState<Relic | "">("");
+  const [charClass, setCharClass] = useState<CharacterClass | "">("");
   const [attrs, setAttrs] = useState<Record<AttributeKey, number>>({
-    str: 10,
-    dex: 10,
-    int: 10,
-    res: 10,
-    cha: 10,
-    per: 10,
+    str: ATTR_START,
+    dex: ATTR_START,
+    int: ATTR_START,
+    cha: ATTR_START,
+    res: ATTR_START,
   });
   const [saving, setSaving] = useState(false);
   const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
@@ -76,18 +70,26 @@ function NewCharacter() {
       .then(({ data }) => setCampaigns(data ?? []));
   }, []);
 
-  const spent = useMemo(
-    () =>
-      (Object.values(attrs) as number[]).reduce((sum, v) => sum + (COSTS[v] ?? 999), 0),
-    [attrs],
-  );
-  const remaining = BASE_POOL - spent;
+  // Pool: 4 pontos + 1 ponto extra por atributo reduzido a 0.
+  const { pool, spent, remaining, zeroed } = useMemo(() => {
+    const values = ATTR_KEYS.map((k) => attrs[k]);
+    const zeroCount = values.filter((v) => v === 0).length;
+    const poolValue = ATTR_POINTS + zeroCount;
+    const spentValue = values.reduce((sum, v) => sum + Math.max(0, v - ATTR_START), 0);
+    return {
+      pool: poolValue,
+      spent: spentValue,
+      remaining: poolValue - spentValue,
+      zeroed: zeroCount,
+    };
+  }, [attrs]);
 
   const derived = useMemo(
     () => ({
-      hp: maxHP(attrs.res, 1),
-      sanity: maxSanity(attrs.int, attrs.res, 1),
-      pa: maxPA(1),
+      hp: maxHP(attrs.res),
+      sanity: maxSanity(attrs.int),
+      pa: maxPA(attrs.int),
+      defense: defenseValue(attrs.dex),
     }),
     [attrs],
   );
@@ -95,13 +97,15 @@ function NewCharacter() {
   function adjust(key: AttributeKey, delta: number) {
     setAttrs((prev) => {
       const next = prev[key] + delta;
-      if (next < 8 || next > 15) return prev;
+      if (next < 0 || next > ATTR_MAX_START) return prev;
       const projected = { ...prev, [key]: next };
-      const totalCost = (Object.values(projected) as number[]).reduce(
-        (s, v) => s + (COSTS[v] ?? 999),
-        0,
-      );
-      if (totalCost > BASE_POOL) return prev;
+      const values = ATTR_KEYS.map((k) => projected[k]);
+      const nextPool = ATTR_POINTS + values.filter((v) => v === 0).length;
+      const nextSpent = values.reduce((s, v) => s + Math.max(0, v - ATTR_START), 0);
+      if (nextSpent > nextPool) {
+        toast.error("Pontos insuficientes. Reduza outro atributo primeiro.");
+        return prev;
+      }
       return projected;
     });
   }
@@ -114,6 +118,18 @@ function NewCharacter() {
     }
     if (!element) {
       toast.error("Escolha um elemento cósmico.");
+      return;
+    }
+    if (!charClass) {
+      toast.error("Escolha uma classe (Cap. 4).");
+      return;
+    }
+    if (remaining !== 0) {
+      toast.error(
+        remaining > 0
+          ? `Ainda restam ${remaining} ponto(s) de atributo para distribuir.`
+          : "Você distribuiu pontos demais.",
+      );
       return;
     }
     setSaving(true);
@@ -133,13 +149,16 @@ function NewCharacter() {
         origin: origin.trim() || null,
         element,
         relic: relic || null,
+        character_class: charClass,
+        track: null,
+        xp: 0,
         level: 1,
         str_score: attrs.str,
         dex_score: attrs.dex,
         int_score: attrs.int,
         res_score: attrs.res,
         cha_score: attrs.cha,
-        per_score: attrs.per,
+        per_score: 0,
         hp_current: derived.hp,
         hp_max: derived.hp,
         sanity_current: derived.sanity,
@@ -151,7 +170,11 @@ function NewCharacter() {
       .single();
     setSaving(false);
     if (error) {
-      toast.error(error.code === "42501" ? "Você não tem permissão para criar este Portador nesta campanha." : `Não foi possível criar o Portador: ${error.message}`);
+      toast.error(
+        error.code === "42501"
+          ? "Você não tem permissão para criar este Portador nesta campanha."
+          : `Não foi possível criar o Portador: ${error.message}`,
+      );
       return;
     }
     toast.success("Portador manifestado.");
@@ -171,7 +194,7 @@ function NewCharacter() {
         className="mt-4 space-y-3"
         style={{ animation: "fade-up 0.6s var(--ease-out-expo) both" }}
       >
-        <p className="ritual-eyebrow">Rito de Manifestação</p>
+        <p className="ritual-eyebrow">Rito de Manifestação · Capítulo 4</p>
         <h1 className="ritual-title text-5xl text-foreground">Novo Portador</h1>
       </header>
 
@@ -180,21 +203,80 @@ function NewCharacter() {
           <p className="ritual-eyebrow">Identidade</p>
           <div className="grid gap-4 md:grid-cols-2">
             <FormField label="Nome" value={name} onChange={setName} required />
-            <FormField label="Origem" value={origin} onChange={setOrigin} placeholder="Cidade cósmica de Aetheris" />
+            <FormField
+              label="Origem"
+              value={origin}
+              onChange={setOrigin}
+              placeholder="Cidade cósmica de Aetheris"
+            />
           </div>
-          <FormField label="Conceito" value={concept} onChange={setConcept} placeholder="Investigador atormentado por visões" />
+          <FormField
+            label="Conceito"
+            value={concept}
+            onChange={setConcept}
+            placeholder="Investigador atormentado por visões"
+          />
           <div>
-            <label htmlFor="character-campaign" className="ml-1 text-[10px] uppercase tracking-widest text-white/40">Campanha (opcional)</label>
-            <select id="character-campaign" value={campaignId} onChange={(e) => setCampaignId(e.target.value)} className="mt-1.5 w-full rounded-lg border border-white/5 bg-abyss px-4 py-3 text-sm text-foreground focus:border-prismatic/40 focus:outline-none">
+            <label
+              htmlFor="character-campaign"
+              className="ml-1 text-[10px] uppercase tracking-widest text-white/40"
+            >
+              Campanha (opcional)
+            </label>
+            <select
+              id="character-campaign"
+              value={campaignId}
+              onChange={(e) => setCampaignId(e.target.value)}
+              className="mt-1.5 w-full rounded-lg border border-white/5 bg-abyss px-4 py-3 text-sm text-foreground focus:border-prismatic/40 focus:outline-none"
+            >
               <option value="">Portador independente</option>
-              {campaigns.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+              {campaigns.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
             </select>
           </div>
         </section>
 
         <section className="glass-panel space-y-4 rounded-2xl p-6">
+          <p className="ritual-eyebrow">Classe · 4.2 Estrutura de Classe</p>
+          <p className="text-xs text-white/40">
+            A Trilha (subclasse) é escolhida somente no nível 4.
+          </p>
+          <div className="grid gap-2 md:grid-cols-3">
+            {(Object.entries(CLASSES) as [CharacterClass, (typeof CLASSES)["conduite_fisico"]][]).map(
+              ([key, meta]) => (
+                <button
+                  type="button"
+                  key={key}
+                  onClick={() => setCharClass(key)}
+                  className={`rounded-xl border p-3 text-left transition-all ${
+                    charClass === key
+                      ? "border-ritual-gold bg-ritual-gold/5"
+                      : "border-white/10 hover:border-white/30"
+                  }`}
+                >
+                  <p className="ritual-title text-lg text-foreground">{meta.name}</p>
+                  <p className="text-[10px] uppercase tracking-widest text-ritual-gold/70">
+                    {meta.keyAttrs.map((a) => ATTRIBUTES[a].name).join(" · ")}
+                  </p>
+                  <p className="mt-2 text-[11px] text-white/60">{meta.tagline}</p>
+                  <p className="mt-2 text-[11px] text-white/40">
+                    Nv 1 — {meta.abilities[0].text}
+                  </p>
+                  <p className="mt-1 text-[10px] text-white/30">
+                    Trilhas: {meta.tracks.join(" • ")}
+                  </p>
+                </button>
+              ),
+            )}
+          </div>
+        </section>
+
+        <section className="glass-panel space-y-4 rounded-2xl p-6">
           <div className="flex items-center justify-between">
-            <p className="ritual-eyebrow">Atributos</p>
+            <p className="ritual-eyebrow">Atributos · 4.0 Criação de Personagem</p>
             <span
               className={`font-mono text-xs ${
                 remaining === 0
@@ -204,76 +286,84 @@ function NewCharacter() {
                     : "text-white/60"
               }`}
             >
-              Pontos restantes: {remaining}
+              Pontos restantes: {remaining} / {pool}
             </span>
           </div>
           <p className="text-xs text-white/40">
-            Compra por pontos (27). Cada atributo começa em 10, pode ir de 8 a 15.
-            Custos: 8=0 · 9=1 · 10=2 · 11=3 · 12=4 · 13=5 · 14=7 · 15=9.
+            Todos os atributos começam em 1. Distribua 4 pontos; o máximo inicial é 3.
+            Reduzir um atributo para 0 concede +1 ponto extra — e uma consequência
+            narrativa permanente.
+            {zeroed > 0 && (
+              <span className="text-corruption">
+                {" "}
+                {zeroed} atributo(s) zerado(s) → +{zeroed} ponto(s).
+              </span>
+            )}
           </p>
           <div className="grid gap-3 md:grid-cols-2">
-            {(Object.entries(ATTRIBUTES) as [AttributeKey, typeof ATTRIBUTES.str][]).map(
-              ([key, meta]) => (
+            {ATTR_KEYS.map((key) => {
+              const meta = ATTRIBUTES[key];
+              const value = attrs[key];
+              return (
                 <div
                   key={key}
-                  className="flex items-center justify-between rounded-xl border border-white/5 bg-black/30 p-3"
+                  className={`rounded-xl border p-3 ${
+                    value === 0 ? "border-corruption/40 bg-corruption/5" : "border-white/5 bg-black/30"
+                  }`}
                 >
-                  <div>
-                    <p className="text-sm text-foreground">
-                      {meta.name}{" "}
-                      <span className="font-mono text-[10px] text-white/40">
-                        ({meta.short})
-                      </span>
-                    </p>
-                    <p className="text-[10px] text-white/40">{meta.description}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => adjust(key, -1)}
-                      className="size-7 rounded-full border border-white/10 text-white/60 hover:border-corruption hover:text-corruption"
-                    >
-                      −
-                    </button>
-                    <div className="min-w-[3ch] text-center font-mono">
-                      <span className="text-lg text-foreground">{attrs[key]}</span>
-                      <span className="ml-1 text-[10px] text-white/40">
-                        ({attrModifier(attrs[key]) >= 0 ? "+" : ""}
-                        {attrModifier(attrs[key])})
-                      </span>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm text-foreground">
+                        {meta.name}{" "}
+                        <span className="font-mono text-[10px] text-white/40">
+                          ({meta.short})
+                        </span>
+                      </p>
+                      <p className="text-[10px] text-white/40">{meta.description}</p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => adjust(key, 1)}
-                      className="size-7 rounded-full border border-white/10 text-white/60 hover:border-ritual-gold hover:text-ritual-gold"
-                    >
-                      +
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        aria-label={`Reduzir ${meta.name}`}
+                        onClick={() => adjust(key, -1)}
+                        className="size-7 rounded-full border border-white/10 text-white/60 hover:border-corruption hover:text-corruption"
+                      >
+                        −
+                      </button>
+                      <span className="min-w-[2ch] text-center font-mono text-lg text-foreground">
+                        {value}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label={`Aumentar ${meta.name}`}
+                        onClick={() => adjust(key, 1)}
+                        className="size-7 rounded-full border border-white/10 text-white/60 hover:border-ritual-gold hover:text-ritual-gold"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
+                  {value === 0 && (
+                    <p className="mt-2 text-[10px] uppercase tracking-widest text-corruption">
+                      {meta.zero}
+                    </p>
+                  )}
                 </div>
-              ),
-            )}
+              );
+            })}
           </div>
-          <div className="mt-3 grid grid-cols-3 gap-3 border-t border-white/5 pt-4 text-center font-mono text-xs">
-            <div>
-              <p className="text-white/40">PV máx</p>
-              <p className="text-lg text-foreground">{derived.hp}</p>
-            </div>
-            <div>
-              <p className="text-white/40">Sanidade máx</p>
-              <p className="text-lg text-foreground">{derived.sanity}</p>
-            </div>
-            <div>
-              <p className="text-white/40">PA máx</p>
-              <p className="text-lg text-foreground">{derived.pa}</p>
-            </div>
+          <div className="mt-3 grid grid-cols-4 gap-3 border-t border-white/5 pt-4 text-center font-mono text-xs">
+            <Derived label="PV (10 + RES×2)" value={derived.hp} />
+            <Derived label="PS (10 + INT×2)" value={derived.sanity} />
+            <Derived label="PA (10 + INT×2)" value={derived.pa} />
+            <Derived label="Defesa (10 + DES)" value={derived.defense} />
           </div>
         </section>
 
         <section className="glass-panel space-y-4 rounded-2xl p-6">
           <p className="ritual-eyebrow">Elemento Cósmico</p>
           <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
-            {(Object.entries(ELEMENTS) as [CosmicElement, typeof ELEMENTS.prisma][]).map(
+            {(Object.entries(ELEMENTS) as [CosmicElement, (typeof ELEMENTS)["prisma"]][]).map(
               ([key, meta]) => (
                 <button
                   type="button"
@@ -285,10 +375,7 @@ function NewCharacter() {
                       : "border-white/10 hover:border-white/30"
                   }`}
                 >
-                  <p
-                    className="ritual-title text-lg"
-                    style={{ color: meta.color }}
-                  >
+                  <p className="ritual-title text-lg" style={{ color: meta.color }}>
                     {meta.name}
                   </p>
                   <p className="text-[10px] uppercase tracking-widest text-white/40">
@@ -315,7 +402,7 @@ function NewCharacter() {
             >
               Nenhuma — Portador ainda não sintonizado
             </button>
-            {(Object.entries(RELICS) as [Relic, typeof RELICS.prisma_harmonia][]).map(
+            {(Object.entries(RELICS) as [Relic, (typeof RELICS)["prisma_harmonia"]][]).map(
               ([key, meta]) => (
                 <button
                   type="button"
@@ -347,13 +434,22 @@ function NewCharacter() {
           </Link>
           <button
             type="submit"
-            disabled={saving || remaining < 0}
+            disabled={saving}
             className="rounded-md bg-ritual-gold px-6 py-3 text-xs uppercase tracking-[0.25em] text-abyss transition-colors hover:bg-ritual-gold/90 disabled:opacity-50"
           >
             {saving ? "Manifestando…" : "Selar Pacto"}
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function Derived({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <p className="text-[10px] text-white/40">{label}</p>
+      <p className="text-lg text-foreground">{value}</p>
     </div>
   );
 }
@@ -373,7 +469,10 @@ function FormField({
 }) {
   return (
     <div>
-      <label htmlFor={`field-${label}`} className="ml-1 text-[10px] uppercase tracking-widest text-white/40">
+      <label
+        htmlFor={`field-${label}`}
+        className="ml-1 text-[10px] uppercase tracking-widest text-white/40"
+      >
         {label}
       </label>
       <input

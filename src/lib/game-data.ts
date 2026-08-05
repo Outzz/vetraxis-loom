@@ -142,67 +142,135 @@ export const RELICS: Record<
   },
 };
 
-export type AttributeKey = "str" | "dex" | "int" | "res" | "cha" | "per";
+// Cap. 4.0 — Criação de Personagem: cinco atributos, começando em 1
+export type AttributeKey = "str" | "dex" | "int" | "cha" | "res";
 
 export const ATTRIBUTES: Record<
   AttributeKey,
-  { name: string; short: string; description: string }
+  { name: string; short: string; description: string; zero: string }
 > = {
   str: {
     name: "Força",
     short: "FOR",
-    description: "Poder físico bruto. Dano corpo a corpo, carga, esmagar.",
+    description: "Luta, Atletismo, dano físico corpo a corpo.",
+    zero: "Não pode carregar itens pesados; -2 em ataques físicos.",
   },
   dex: {
     name: "Destreza",
     short: "DES",
-    description: "Agilidade e reflexos. Iniciativa, esquiva, ataques ágeis.",
+    description: "Furtividade, Mira, Iniciativa, Defesa base.",
+    zero: "Sempre age por último; sem bônus de Defesa.",
   },
   int: {
     name: "Intelecto",
     short: "INT",
-    description: "Raciocínio e memória. Testes de Sanidade, arcano, análise.",
-  },
-  res: {
-    name: "Resiliência",
-    short: "RES",
-    description: "Vontade e vigor. Testes de Corrupção, resistência a dano.",
+    description: "Ocultismo, Ritualismo, Sanidade base, controle de poderes.",
+    zero: "Falha crítica em poderes gera Corrupção dobrada.",
   },
   cha: {
     name: "Carisma",
     short: "CAR",
-    description: "Presença e persuasão. Interação com PNs, liderança.",
+    description: "Persuasão, liderança, influência sobre Relíquias.",
+    zero: "Relíquias ignoram os desejos do portador com mais frequência.",
   },
-  per: {
-    name: "Percepção",
-    short: "PER",
-    description: "Sentidos aguçados. Notar, rastrear, sentir anomalias.",
+  res: {
+    name: "Resiliência",
+    short: "RES",
+    description: "Resistência a Corrupção, PV base, testes de condição.",
+    zero: "Qualquer Corrupção recebida nunca é reduzida à metade.",
   },
 };
 
-// Modificador clássico: (atributo - 10) / 2 arredondado para baixo
+// Criação (Cap. 4.0): todos começam em 1, 4 pontos para distribuir, máximo inicial 3.
+// Reduzir um atributo a 0 concede +1 ponto extra.
+export const ATTR_START = 1;
+export const ATTR_POINTS = 4;
+export const ATTR_MAX_START = 3;
+export const ATTR_MAX_LEVEL = 4; // sobe para 5 no Despertar (nível 10) no elemento
+
+// Classes (Cap. 4.2)
+export type CharacterClass = "conduite_fisico" | "condutor_anomalo" | "tecnicista_dimensional";
+
+export const CLASSES: Record<
+  CharacterClass,
+  {
+    name: string;
+    tagline: string;
+    keyAttrs: AttributeKey[];
+    abilities: { level: number; text: string }[];
+    tracks: string[];
+  }
+> = {
+  conduite_fisico: {
+    name: "Conduíte Físico",
+    tagline: "Tanques e frontliners; fundem o corpo com energia elemental.",
+    keyAttrs: ["str", "res"],
+    abilities: [
+      { level: 1, text: "Surgimento do Sangue — ataque imbuído, +1d4 dano elemental" },
+      { level: 3, text: "Postura Anômala — +1 Defesa por 2 turnos" },
+      { level: 6, text: "Pele de Pedra (Guardião) — regenera 1d4 PV por turno" },
+      { level: 9, text: "Título de Protetor — absorve dano por aliado" },
+      { level: 10, text: "Despertar: Estigma Vital — regenera PV massivamente, consome Corrupção" },
+    ],
+    tracks: ["Guardião da Raiz", "Executor Rubro", "Sentinela Solar"],
+  },
+  condutor_anomalo: {
+    name: "Condutor Anômalo",
+    tagline: "Controladores, manipuladores do véu.",
+    keyAttrs: ["int", "cha"],
+    abilities: [
+      { level: 1, text: "Canalizar Elemento — usa 1 poder elemental (nível 1)" },
+      { level: 3, text: "Foco de Véu — +2 em testes de Ritualismo por 2 turnos" },
+      { level: 6, text: "Ruptura Caótica (Prisma) — cria efeitos randômicos" },
+      { level: 9, text: "Chamada Etérea — invoca aliado espectral" },
+      { level: 10, text: "Despertar: Voz do Véu — ordena entidades, custo massivo de Corrupção" },
+    ],
+    tracks: ["Portador Prismático", "Invocador Etéreo", "Luminar Celeste"],
+  },
+  tecnicista_dimensional: {
+    name: "Tecnicista Dimensional",
+    tagline: "Engenheiros de anomalia, suporte tático.",
+    keyAttrs: ["int", "dex"],
+    abilities: [
+      { level: 1, text: "Montagem Rápida — ativa dispositivo simples" },
+      { level: 3, text: "Dispositivo Experimental — arma improvisada com efeito anômalo" },
+      { level: 6, text: "Estabilização Temporal — anula uma distorção local" },
+      { level: 9, text: "Rede de Sinais — altera campo de batalha (bônus tático)" },
+      { level: 10, text: "Despertar: Máquina Viva — artefato de grande poder; risco extremo" },
+    ],
+    tracks: ["Engenheiro de Dispositivos Arcanos", "Analista Cósmico", "Exilado do Vório"],
+  },
+};
+
+// No Anomalia Cósmica o valor do atributo JÁ é o bônus somado nos testes.
 export function attrModifier(score: number): number {
-  return Math.floor((score - 10) / 2);
+  return score;
 }
 
-// Fórmulas derivadas do livro
-export function maxHP(res: number, level: number): number {
-  return 10 + attrModifier(res) * 2 + (level - 1) * 4;
+// Fórmulas oficiais (Cap. 1.6 e 4.1)
+export function maxHP(res: number): number {
+  return 10 + res * 2;
 }
 
-export function maxSanity(int: number, res: number, level: number): number {
-  return 10 + attrModifier(int) + attrModifier(res) + Math.floor(level / 2);
+export function maxSanity(int: number): number {
+  return 10 + int * 2;
 }
 
-export function maxPA(level: number): number {
-  // Livro: PA base cresce lentamente. 3 no nível 1, +1 a cada 3 níveis.
-  return 3 + Math.floor((level - 1) / 3);
+export function maxPA(int: number): number {
+  return 10 + int * 2;
+}
+
+// Defesa (Cap. 1.5): 10 + Destreza + bônus de armadura
+export function defenseValue(dex: number, armor = 0): number {
+  return 10 + dex + armor;
 }
 
 export function initiative(dex: number): string {
-  const mod = attrModifier(dex);
-  return `1d20${mod >= 0 ? "+" : ""}${mod}`;
+  return `1d20${dex >= 0 ? "+" : ""}${dex}`;
 }
+
+// XP: 500 XP = 1 nível (Cap. 4.3)
+export const XP_PER_LEVEL = 500;
 
 // Faixas de corrupção — do livro (Cap. 3)
 export const CORRUPTION_TIERS = [
@@ -244,22 +312,16 @@ export function corruptionTier(value: number) {
   return CORRUPTION_TIERS.find((t) => value <= t.max) ?? CORRUPTION_TIERS[0];
 }
 
-// Perícias padrão do livro
+// Perícias oficiais (Cap. 4.3)
 export const SKILLS: { key: string; name: string; attr: AttributeKey }[] = [
+  { key: "luta", name: "Luta", attr: "str" },
   { key: "atletismo", name: "Atletismo", attr: "str" },
-  { key: "acrobacia", name: "Acrobacia", attr: "dex" },
   { key: "furtividade", name: "Furtividade", attr: "dex" },
-  { key: "prestidigitacao", name: "Prestidigitação", attr: "dex" },
-  { key: "arcano", name: "Arcano", attr: "int" },
-  { key: "investigacao", name: "Investigação", attr: "int" },
-  { key: "medicina", name: "Medicina", attr: "int" },
-  { key: "ritual", name: "Ritual", attr: "int" },
-  { key: "sobrevivencia", name: "Sobrevivência", attr: "res" },
-  { key: "intimidacao", name: "Intimidação", attr: "cha" },
+  { key: "mira", name: "Mira", attr: "dex" },
+  { key: "ocultismo", name: "Ocultismo", attr: "int" },
+  { key: "ritualismo", name: "Ritualismo", attr: "int" },
   { key: "persuasao", name: "Persuasão", attr: "cha" },
-  { key: "enganacao", name: "Enganação", attr: "cha" },
-  { key: "percepcao", name: "Percepção", attr: "per" },
-  { key: "intuicao", name: "Intuição", attr: "per" },
+  { key: "vontade", name: "Resistência/Vontade", attr: "res" },
 ];
 
 export const DIFFICULTIES = [
