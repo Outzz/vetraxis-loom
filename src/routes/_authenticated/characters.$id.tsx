@@ -179,9 +179,9 @@ function CharacterSheet() {
   const derived = useMemo(() => {
     if (!c) return null;
     return {
-      hp: maxHP(c.res_score, c.level),
-      sanity: maxSanity(c.int_score, c.res_score, c.level),
-      pa: maxPA(c.level),
+      hp: maxHP(c.res_score),
+      sanity: maxSanity(c.int_score),
+      pa: maxPA(c.int_score),
     };
   }, [c]);
 
