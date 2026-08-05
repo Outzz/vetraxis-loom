@@ -19,7 +19,7 @@ import {
   type Relic,
 } from "@/lib/game-data";
 import { rollTest, rollDice } from "@/lib/dice";
-import { DiceRoller } from "@/components/DiceRoller";
+import { pushRoll } from "@/lib/dice-store";
 
 export const Route = createFileRoute("/_authenticated/characters/$id")({
   head: () => ({
