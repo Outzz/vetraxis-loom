@@ -129,11 +129,11 @@ function CharacterSheet() {
 
   function rollAttr(key: AttributeKey) {
     if (!c) return;
-    const score = c[ATTR_TO_SCORE[key]] as number;
-    const mod = attrModifier(score);
+    const mod = attrModifier(c[ATTR_TO_SCORE[key]] as number);
     const r = rollDice(1, 20, mod);
+    pushRoll(r, { label: ATTRIBUTES[key].name });
     addLog(
-      `${ATTRIBUTES[key].name}: ${r.formula} = ${r.rolls[0]} ${mod >= 0 ? "+" : ""}${mod} = ${r.total}${
+      `${ATTRIBUTES[key].name}: ${r.formula} = [${r.rolls[0]}] ${mod >= 0 ? "+" : ""}${mod} = ${r.total}${
         r.critical === "success" ? " ⭐" : r.critical === "fumble" ? " ☠" : ""
       }`,
     );
@@ -142,10 +142,10 @@ function CharacterSheet() {
   function rollSkill(skillKey: string, cd: number) {
     if (!c) return;
     const skill = SKILLS.find((s) => s.key === skillKey)!;
-    const score = c[ATTR_TO_SCORE[skill.attr]] as number;
-    const mod = attrModifier(score);
+    const mod = attrModifier(c[ATTR_TO_SCORE[skill.attr]] as number);
     const bonus = c.skills[skillKey] ?? 0;
     const r = rollTest(mod, bonus, cd);
+    pushRoll(r, { label: skill.name, cd, passed: r.passed });
     addLog(
       `${skill.name} vs CD ${cd}: [${r.rolls[0]}] ${mod >= 0 ? "+" : ""}${mod}${bonus ? "+" + bonus : ""} = ${r.total} · ${
         r.passed ? "SUCESSO" : "FALHA"
@@ -157,6 +157,7 @@ function CharacterSheet() {
     if (!c) return;
     const mod = attrModifier(c.int_score);
     const r = rollTest(mod, 0, 15);
+    pushRoll(r, { label: "Teste de Sanidade", cd: 15, passed: r.passed });
     addLog(
       `Sanidade vs CD 15: [${r.rolls[0]}]${mod >= 0 ? "+" : ""}${mod} = ${r.total} · ${
         r.passed ? "SUCESSO" : "PERDE SANIDADE"
@@ -169,6 +170,7 @@ function CharacterSheet() {
     const mod = attrModifier(c.res_score);
     const cd = 10 + intensity;
     const r = rollTest(mod, 0, cd);
+    pushRoll(r, { label: "Teste de Corrupção", cd, passed: r.passed });
     addLog(
       `Corrupção vs CD ${cd}: [${r.rolls[0]}]${mod >= 0 ? "+" : ""}${mod} = ${r.total} · ${
         r.passed ? "RESISTE" : "GANHA CORRUPÇÃO"
