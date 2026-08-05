@@ -69,10 +69,10 @@ const ATTR_TO_SCORE: Record<AttributeKey, keyof Character> = {
   str: "str_score",
   dex: "dex_score",
   int: "int_score",
-  res: "res_score",
   cha: "cha_score",
-  per: "per_score",
+  res: "res_score",
 };
+
 
 function CharacterSheet() {
   const { id } = Route.useParams();
