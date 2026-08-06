@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ATTRIBUTES,
+  CLASSES,
+  CLASS_CHOICE_CORRUPTION,
   CORRUPTION_TIERS,
   DIFFICULTIES,
   ELEMENTS,
@@ -14,12 +16,15 @@ import {
   maxHP,
   maxPA,
   maxSanity,
+  trackById,
   type AttributeKey,
+  type CharacterClass,
   type CosmicElement,
   type Relic,
 } from "@/lib/game-data";
 import { rollTest, rollDice } from "@/lib/dice";
 import { pushRoll } from "@/lib/dice-store";
+
 
 export const Route = createFileRoute("/_authenticated/characters/$id")({
   head: () => ({
@@ -42,8 +47,12 @@ type Character = {
   concept: string | null;
   origin: string | null;
   level: number;
+  xp: number;
+  character_class: CharacterClass | null;
+  track: string | null;
   element: CosmicElement | null;
   relic: Relic | null;
+
   str_score: number;
   dex_score: number;
   int_score: number;
@@ -80,9 +89,10 @@ function CharacterSheet() {
   const [c, setC] = useState<Character | null>(null);
   const [loading, setLoading] = useState(true);
   const [log, setLog] = useState<string[]>([]);
-  const [tab, setTab] = useState<"stats" | "skills" | "inventory" | "powers" | "notes">(
-    "stats",
-  );
+  const [tab, setTab] = useState<
+    "stats" | "skills" | "class" | "inventory" | "powers" | "notes"
+  >("stats");
+
 
   async function load() {
     const { data, error } = await supabase
@@ -414,6 +424,8 @@ function CharacterSheet() {
                 [
                   ["stats", "Testes"],
                   ["skills", "Perícias"],
+                  ["class", "Classe & Trilha"],
+
                   ["inventory", "Inventário"],
                   ["powers", "Poderes"],
                   ["notes", "Anotações"],
@@ -478,7 +490,10 @@ function CharacterSheet() {
                 <SkillsPanel c={c} onUpdate={update} onRoll={rollSkill} />
               )}
 
+              {tab === "class" && <ClassPanel c={c} onUpdate={update} />}
+
               {tab === "inventory" && <InventoryPanel c={c} onUpdate={update} />}
+
 
               {tab === "powers" && <PowersPanel c={c} onUpdate={update} />}
 
@@ -512,9 +527,8 @@ function CharacterSheet() {
                 <div
                   key={t.name}
                   className={`flex items-center gap-3 rounded border-l-2 pl-3 text-xs ${
-                    c.corruption <= t.max && c.corruption > (CORRUPTION_TIERS.find((x) => x.max === t.max - 20)?.max ?? -1)
-                      ? "opacity-100"
-                      : "opacity-40"
+                    tier.name === t.name ? "opacity-100" : "opacity-40"
+
                   }`}
                   style={{ borderColor: t.color }}
                 >
@@ -634,7 +648,140 @@ function ResourceControl({
   );
 }
 
+function ClassPanel({
+  c,
+  onUpdate,
+}: {
+  c: Character;
+  onUpdate: (p: Partial<Character>) => void;
+}) {
+  const locked = c.corruption < CLASS_CHOICE_CORRUPTION;
+  const cls = c.character_class ? CLASSES[c.character_class] : null;
+  const track = c.character_class && c.track ? trackById(c.character_class, c.track) : null;
+
+  if (locked) {
+    return (
+      <div className="rounded-xl border border-white/10 bg-black/30 p-6 text-center">
+        <p className="ritual-title text-xl text-foreground">Assimilação insuficiente</p>
+        <p className="mx-auto mt-2 max-w-md text-sm text-white/50">
+          Classe e Trilha são escolhidas somente ao atingir {CLASS_CHOICE_CORRUPTION}% de
+          Corrupção. O Elemento Cósmico não se escolhe — ele se manifesta quando algo
+          na mesa o revelar.
+        </p>
+        <p className="mt-3 font-mono text-xs text-corruption">
+          Corrupção atual: {c.corruption}%
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="ritual-eyebrow mb-3">Classe</p>
+        <div className="grid gap-2 md:grid-cols-2">
+          {(Object.keys(CLASSES) as CharacterClass[]).map((key) => {
+            const meta = CLASSES[key];
+            const active = c.character_class === key;
+            return (
+              <button
+                key={key}
+                onClick={() =>
+                  onUpdate({
+                    character_class: key,
+                    track: active ? c.track : null,
+                  })
+                }
+                className={`rounded-xl border p-3 text-left transition-all ${
+                  active
+                    ? "border-ritual-gold bg-ritual-gold/5"
+                    : "border-white/10 hover:border-white/30"
+                }`}
+              >
+                <p className="ritual-title text-lg text-foreground">{meta.name}</p>
+                <p className="text-[10px] uppercase tracking-widest text-ritual-gold/70">
+                  {meta.keyAttrs.map((a) => ATTRIBUTES[a].name).join(" · ")}
+                </p>
+                <p className="mt-2 text-[11px] text-white/60">{meta.tagline}</p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {cls && (
+        <div>
+          <p className="ritual-eyebrow mb-2">Recursos de Classe</p>
+          <ul className="space-y-1 text-xs text-white/60">
+            {cls.resources.map((r) => (
+              <li key={r}>• {r}</li>
+            ))}
+          </ul>
+          <p className="mt-3 text-[11px] text-white/50">
+            <span className="uppercase tracking-widest text-ritual-gold/80">
+              Despertar (Nv 10) — {cls.awakening.name}:
+            </span>{" "}
+            {cls.awakening.text}
+          </p>
+        </div>
+      )}
+
+      {cls && (
+        <div>
+          <p className="ritual-eyebrow mb-3">Trilha</p>
+          <div className="grid gap-2 md:grid-cols-2">
+            {cls.tracks.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => onUpdate({ track: t.key })}
+                className={`rounded-xl border p-3 text-left transition-all ${
+                  c.track === t.key
+                    ? "border-prismatic bg-prismatic/5"
+                    : "border-white/10 hover:border-white/30"
+                }`}
+              >
+                <p className="text-sm text-foreground">{t.name}</p>
+                <p className="mt-1 text-[11px] text-white/50">{t.tagline}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {track && (
+        <div>
+          <p className="ritual-eyebrow mb-3">
+            Habilidades — {track.name} · Assimilação {c.corruption}%
+          </p>
+          <div className="space-y-2">
+            {track.abilities.map((a) => {
+              const unlocked = c.corruption >= a.at;
+              return (
+                <div
+                  key={a.name}
+                  className={`rounded-lg border-l-2 bg-black/20 p-3 ${
+                    unlocked ? "border-ritual-gold" : "border-white/10 opacity-40"
+                  }`}
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="text-sm text-foreground">{a.name}</p>
+                    <span className="font-mono text-[10px] uppercase text-ritual-gold/70">
+                      {a.at}%{unlocked ? "" : " · bloqueada"}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-white/60">{a.text}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SkillsPanel({
+
   c,
   onUpdate,
   onRoll,
@@ -701,6 +848,14 @@ function SkillsPanel({
                   className="w-12 rounded border border-white/10 bg-black/40 px-1 py-0.5 text-center font-mono text-xs"
                   title="Bônus de perícia"
                 />
+                <button
+                  onClick={() => onRoll(s.key, cd)}
+                  className="rounded border border-ritual-gold/40 px-2 py-1 text-[10px] uppercase tracking-widest text-ritual-gold hover:bg-ritual-gold/10"
+                  title={`1d20 ${total >= 0 ? "+" : ""}${total} vs CD ${cd}`}
+                >
+                  Testar
+                </button>
+
               </div>
             </div>
           );
