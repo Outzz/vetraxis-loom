@@ -424,6 +424,8 @@ function CharacterSheet() {
                 [
                   ["stats", "Testes"],
                   ["skills", "Perícias"],
+                  ["class", "Classe & Trilha"],
+
                   ["inventory", "Inventário"],
                   ["powers", "Poderes"],
                   ["notes", "Anotações"],
