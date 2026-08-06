@@ -490,7 +490,10 @@ function CharacterSheet() {
                 <SkillsPanel c={c} onUpdate={update} onRoll={rollSkill} />
               )}
 
+              {tab === "class" && <ClassPanel c={c} onUpdate={update} />}
+
               {tab === "inventory" && <InventoryPanel c={c} onUpdate={update} />}
+
 
               {tab === "powers" && <PowersPanel c={c} onUpdate={update} />}
 
