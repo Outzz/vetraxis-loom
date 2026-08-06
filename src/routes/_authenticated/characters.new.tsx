@@ -8,17 +8,12 @@ import {
   ATTR_MAX_START,
   ATTR_POINTS,
   ATTR_START,
-  CLASSES,
-  ELEMENTS,
-  RELICS,
+  CLASS_CHOICE_CORRUPTION,
   defenseValue,
   maxHP,
   maxPA,
   maxSanity,
   type AttributeKey,
-  type CharacterClass,
-  type CosmicElement,
-  type Relic,
 } from "@/lib/game-data";
 
 const searchSchema = z.object({
@@ -33,6 +28,13 @@ export const Route = createFileRoute("/_authenticated/characters/new")({
         name: "description",
         content: "Rito de criação de um novo Portador para o universo de Vetraxis.",
       },
+      { property: "og:title", content: "Novo Portador — Anomalia Cósmica" },
+      {
+        property: "og:description",
+        content: "Distribua atributos e manifeste um novo agente em Vetraxis.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   validateSearch: searchSchema,
@@ -48,9 +50,6 @@ function NewCharacter() {
   const [name, setName] = useState("");
   const [concept, setConcept] = useState("");
   const [origin, setOrigin] = useState("");
-  const [element, setElement] = useState<CosmicElement | "">("");
-  const [relic, setRelic] = useState<Relic | "">("");
-  const [charClass, setCharClass] = useState<CharacterClass | "">("");
   const [attrs, setAttrs] = useState<Record<AttributeKey, number>>({
     str: ATTR_START,
     dex: ATTR_START,
@@ -71,17 +70,12 @@ function NewCharacter() {
   }, []);
 
   // Pool: 4 pontos + 1 ponto extra por atributo reduzido a 0.
-  const { pool, spent, remaining, zeroed } = useMemo(() => {
+  const { pool, remaining, zeroed } = useMemo(() => {
     const values = ATTR_KEYS.map((k) => attrs[k]);
     const zeroCount = values.filter((v) => v === 0).length;
     const poolValue = ATTR_POINTS + zeroCount;
     const spentValue = values.reduce((sum, v) => sum + Math.max(0, v - ATTR_START), 0);
-    return {
-      pool: poolValue,
-      spent: spentValue,
-      remaining: poolValue - spentValue,
-      zeroed: zeroCount,
-    };
+    return { pool: poolValue, remaining: poolValue - spentValue, zeroed: zeroCount };
   }, [attrs]);
 
   const derived = useMemo(
@@ -110,26 +104,19 @@ function NewCharacter() {
     });
   }
 
+  function reset() {
+    setAttrs({ str: ATTR_START, dex: ATTR_START, int: ATTR_START, cha: ATTR_START, res: ATTR_START });
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (saving) return;
     if (!name.trim()) {
       toast.error("O Portador precisa de um nome.");
       return;
     }
-    if (!element) {
-      toast.error("Escolha um elemento cósmico.");
-      return;
-    }
-    if (!charClass) {
-      toast.error("Escolha uma classe (Cap. 4).");
-      return;
-    }
-    if (remaining !== 0) {
-      toast.error(
-        remaining > 0
-          ? `Ainda restam ${remaining} ponto(s) de atributo para distribuir.`
-          : "Você distribuiu pontos demais.",
-      );
+    if (remaining < 0) {
+      toast.error("Você distribuiu pontos demais.");
       return;
     }
     setSaving(true);
@@ -147,12 +134,13 @@ function NewCharacter() {
         name: name.trim(),
         concept: concept.trim() || null,
         origin: origin.trim() || null,
-        element,
-        relic: relic || null,
-        character_class: charClass,
+        element: null,
+        relic: null,
+        character_class: null,
         track: null,
         xp: 0,
         level: 1,
+        corruption: 0,
         str_score: attrs.str,
         dex_score: attrs.dex,
         int_score: attrs.int,
@@ -169,11 +157,11 @@ function NewCharacter() {
       .select("id")
       .single();
     setSaving(false);
-    if (error) {
+    if (error || !data) {
       toast.error(
-        error.code === "42501"
+        error?.code === "42501"
           ? "Você não tem permissão para criar este Portador nesta campanha."
-          : `Não foi possível criar o Portador: ${error.message}`,
+          : `Não foi possível criar o Portador: ${error?.message ?? "erro desconhecido"}`,
       );
       return;
     }
@@ -194,8 +182,13 @@ function NewCharacter() {
         className="mt-4 space-y-3"
         style={{ animation: "fade-up 0.6s var(--ease-out-expo) both" }}
       >
-        <p className="ritual-eyebrow">Rito de Manifestação · Capítulo 4</p>
+        <p className="ritual-eyebrow">Rito de Manifestação · Capítulo 4.0</p>
         <h1 className="ritual-title text-5xl text-foreground">Novo Portador</h1>
+        <p className="max-w-2xl text-sm text-white/50">
+          Elemento, Classe e Trilha não são escolhidos aqui. A Classe e a Trilha são
+          liberadas na ficha ao atingir {CLASS_CHOICE_CORRUPTION}% de Corrupção; o
+          Elemento só se manifesta quando algo na mesa o revelar.
+        </p>
       </header>
 
       <form onSubmit={submit} className="mt-10 space-y-8">
@@ -240,54 +233,28 @@ function NewCharacter() {
         </section>
 
         <section className="glass-panel space-y-4 rounded-2xl p-6">
-          <p className="ritual-eyebrow">Classe · 4.2 Estrutura de Classe</p>
-          <p className="text-xs text-white/40">
-            A Trilha (subclasse) é escolhida somente no nível 4.
-          </p>
-          <div className="grid gap-2 md:grid-cols-3">
-            {(Object.entries(CLASSES) as [CharacterClass, (typeof CLASSES)["conduite_fisico"]][]).map(
-              ([key, meta]) => (
-                <button
-                  type="button"
-                  key={key}
-                  onClick={() => setCharClass(key)}
-                  className={`rounded-xl border p-3 text-left transition-all ${
-                    charClass === key
-                      ? "border-ritual-gold bg-ritual-gold/5"
-                      : "border-white/10 hover:border-white/30"
-                  }`}
-                >
-                  <p className="ritual-title text-lg text-foreground">{meta.name}</p>
-                  <p className="text-[10px] uppercase tracking-widest text-ritual-gold/70">
-                    {meta.keyAttrs.map((a) => ATTRIBUTES[a].name).join(" · ")}
-                  </p>
-                  <p className="mt-2 text-[11px] text-white/60">{meta.tagline}</p>
-                  <p className="mt-2 text-[11px] text-white/40">
-                    Nv 1 — {meta.abilities[0].text}
-                  </p>
-                  <p className="mt-1 text-[10px] text-white/30">
-                    Trilhas: {meta.tracks.join(" • ")}
-                  </p>
-                </button>
-              ),
-            )}
-          </div>
-        </section>
-
-        <section className="glass-panel space-y-4 rounded-2xl p-6">
           <div className="flex items-center justify-between">
             <p className="ritual-eyebrow">Atributos · 4.0 Criação de Personagem</p>
-            <span
-              className={`font-mono text-xs ${
-                remaining === 0
-                  ? "text-ritual-gold"
-                  : remaining < 0
-                    ? "text-corruption"
-                    : "text-white/60"
-              }`}
-            >
-              Pontos restantes: {remaining} / {pool}
-            </span>
+            <div className="flex items-center gap-3">
+              <span
+                className={`font-mono text-xs ${
+                  remaining === 0
+                    ? "text-ritual-gold"
+                    : remaining < 0
+                      ? "text-corruption"
+                      : "text-white/60"
+                }`}
+              >
+                Pontos restantes: {remaining} / {pool}
+              </span>
+              <button
+                type="button"
+                onClick={reset}
+                className="text-[10px] uppercase tracking-widest text-white/40 hover:text-ritual-gold"
+              >
+                ↻ Zerar
+              </button>
+            </div>
           </div>
           <p className="text-xs text-white/40">
             Todos os atributos começam em 1. Distribua 4 pontos; o máximo inicial é 3.
@@ -308,7 +275,9 @@ function NewCharacter() {
                 <div
                   key={key}
                   className={`rounded-xl border p-3 ${
-                    value === 0 ? "border-corruption/40 bg-corruption/5" : "border-white/5 bg-black/30"
+                    value === 0
+                      ? "border-corruption/40 bg-corruption/5"
+                      : "border-white/5 bg-black/30"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -357,71 +326,6 @@ function NewCharacter() {
             <Derived label="PS (10 + INT×2)" value={derived.sanity} />
             <Derived label="PA (10 + INT×2)" value={derived.pa} />
             <Derived label="Defesa (10 + DES)" value={derived.defense} />
-          </div>
-        </section>
-
-        <section className="glass-panel space-y-4 rounded-2xl p-6">
-          <p className="ritual-eyebrow">Elemento Cósmico</p>
-          <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
-            {(Object.entries(ELEMENTS) as [CosmicElement, (typeof ELEMENTS)["prisma"]][]).map(
-              ([key, meta]) => (
-                <button
-                  type="button"
-                  key={key}
-                  onClick={() => setElement(key)}
-                  className={`rounded-xl border p-3 text-left transition-all ${
-                    element === key
-                      ? "border-ritual-gold bg-ritual-gold/5"
-                      : "border-white/10 hover:border-white/30"
-                  }`}
-                >
-                  <p className="ritual-title text-lg" style={{ color: meta.color }}>
-                    {meta.name}
-                  </p>
-                  <p className="text-[10px] uppercase tracking-widest text-white/40">
-                    {meta.epithet}
-                  </p>
-                  <p className="mt-2 text-[11px] text-white/60">{meta.passive}</p>
-                </button>
-              ),
-            )}
-          </div>
-        </section>
-
-        <section className="glass-panel space-y-4 rounded-2xl p-6">
-          <p className="ritual-eyebrow">Relíquia Sintonizada (opcional)</p>
-          <div className="grid gap-2 md:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => setRelic("")}
-              className={`rounded-xl border p-3 text-left text-sm ${
-                !relic
-                  ? "border-white/40 bg-white/5 text-foreground"
-                  : "border-white/10 text-white/50 hover:border-white/30"
-              }`}
-            >
-              Nenhuma — Portador ainda não sintonizado
-            </button>
-            {(Object.entries(RELICS) as [Relic, (typeof RELICS)["prisma_harmonia"]][]).map(
-              ([key, meta]) => (
-                <button
-                  type="button"
-                  key={key}
-                  onClick={() => setRelic(key)}
-                  className={`rounded-xl border p-3 text-left transition-all ${
-                    relic === key
-                      ? "border-ritual-gold bg-ritual-gold/5"
-                      : "border-white/10 hover:border-white/30"
-                  }`}
-                >
-                  <p className="text-sm text-foreground">{meta.name}</p>
-                  <p className="text-[10px] uppercase tracking-widest text-ritual-gold/70">
-                    {meta.god}
-                  </p>
-                  <p className="mt-1 text-[11px] text-white/50">{meta.effect}</p>
-                </button>
-              ),
-            )}
           </div>
         </section>
 
