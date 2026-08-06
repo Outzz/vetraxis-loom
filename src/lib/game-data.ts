@@ -576,38 +576,62 @@ export function initiative(dex: number): string {
 // XP: 500 XP = 1 nível (Cap. 4.3)
 export const XP_PER_LEVEL = 500;
 
-// Faixas de corrupção — do livro (Cap. 3)
+// Faixas de corrupção — Cap. 3.4 (Ed. 1.2): 0% a 99%; 100% = Fragmento
 export const CORRUPTION_TIERS = [
+  { max: 9, name: "Humano", effects: "Nenhum efeito mecânico.", color: "#94a3b8" },
+  { max: 19, name: "Eco Sutil", effects: "Olhos brilham; sonhos vívidos.", color: "#84cc16" },
   {
-    max: 20,
-    name: "Tocado",
-    effects: "Sonhos vívidos. Visões ocasionais. Sem penalidade mecânica.",
-    color: "#84cc16",
+    max: 29,
+    name: "Conexão Fraca",
+    effects: "Voz distorce; +1 em poderes, -1 em testes sociais.",
+    color: "#a3e635",
   },
   {
-    max: 40,
-    name: "Marcado",
-    effects: "Marcas visíveis na pele. -1 Carisma em situações sociais mundanas.",
+    max: 39,
+    name: "Instabilidade",
+    effects: "Percebe presenças; -1 em testes de Sanidade.",
     color: "#facc15",
   },
   {
-    max: 60,
-    name: "Distorcido",
-    effects: "Percepção alterada. -2 em Sanidade. +1d4 de dano anômalo.",
+    max: 49,
+    name: "Reação Elemental",
+    effects: "Exala propriedades elementais (odor, calor, frio).",
+    color: "#fbbf24",
+  },
+  {
+    max: 59,
+    name: "Mente Fendida",
+    effects: "Risco de Alucinação; testes de PS diários CD 15.",
     color: "#fb923c",
   },
   {
-    max: 80,
-    name: "Consumido",
-    effects:
-      "Corpo se transforma. -3 Sanidade máx. Ganha um Poder Anômalo (Mestre define).",
+    max: 69,
+    name: "Sincronia Parcial",
+    effects: "Canaliza poderes de nível superior, mas ganha Corrupção adicional.",
+    color: "#f97316",
+  },
+  {
+    max: 79,
+    name: "Corpo Mutante",
+    effects: "Mutações visíveis; perda de vantagens sociais.",
     color: "#ef4444",
   },
   {
+    max: 89,
+    name: "Fusão Instável",
+    effects: "Descanso penalizado; testes de Sanidade ou perde PV.",
+    color: "#dc2626",
+  },
+  {
+    max: 99,
+    name: "Hospedeiro",
+    effects: "Personalidade partilhada; o Narrador controla o personagem por períodos.",
+    color: "#c026d3",
+  },
+  {
     max: 100,
-    name: "Anomalia Viva",
-    effects:
-      "Deixa de ser humano. O personagem passa ao controle do Mestre — tornou-se uma entidade.",
+    name: "Fragmento",
+    effects: "Torna-se entidade. Fim do personagem jogável.",
     color: "#a855f7",
   },
 ] as const;
@@ -615,6 +639,93 @@ export const CORRUPTION_TIERS = [
 export function corruptionTier(value: number) {
   return CORRUPTION_TIERS.find((t) => value <= t.max) ?? CORRUPTION_TIERS[0];
 }
+
+// Cap. 4.1 — Tabela de Assimilação, grau de poder, custo de PA e Corrupção
+export const PA_TABLE = [
+  { assimilation: 10, grade: 1, pa: 1, corruption: "+1%" },
+  { assimilation: 20, grade: 2, pa: 1, corruption: "+2%" },
+  { assimilation: 35, grade: 3, pa: 2, corruption: "+3%" },
+  { assimilation: 50, grade: 4, pa: 2, corruption: "+4%" },
+  { assimilation: 70, grade: 5, pa: 3, corruption: "+6%" },
+] as const;
+
+export const PA_RECOVERY = [
+  "Descanso curto (10–15 min): recupera 2 PA.",
+  "Descanso longo (8 horas): recupera PA completo.",
+  "Meditar com Relíquia sintonizada (Ação Principal): recupera 1 PA.",
+  "Força Bruta — usar poder sem PA: Corrupção dobrada sem redução e +3 na CD.",
+] as const;
+
+// Cap. 3.2 — Ganho de Corrupção
+export const CORRUPTION_GAIN = [
+  { event: "Usar poder elemental nível 1–2", value: "+1%" },
+  { event: "Usar poder elemental nível 3–4", value: "+2%" },
+  { event: "Usar poder elemental nível 5", value: "+3%" },
+  { event: "Usar Relíquia sem sincronia", value: "+5%" },
+  { event: "Entrar em zona de distorção", value: "+1d4%" },
+  { event: "Falha em teste de Sanidade (visão anômala)", value: "+1d4%" },
+  { event: "Receber dano espiritual crônico", value: "+1–3%" },
+  { event: "Rituais de alto risco / reviver mortos / interferir no tempo", value: "+10%" },
+] as const;
+
+// Cap. 3.6 — Redução de Corrupção
+export const CORRUPTION_REDUCTION = [
+  { method: "Meditação Dimensional (auto)", value: "-1d4%", cost: "Perde 1d6 PS" },
+  { method: "Ritual de Harmonização (grupo)", value: "-1d6%", cost: "3 portadores + 1 relíquia, 1 cena" },
+  { method: "Selo de Luz", value: "-1d10%", cost: "Incapacitado por cena; exige Lanterna Solar" },
+  { method: "Sacrifício Biológico", value: "-1d8%", cost: "Perde PV máx. permanentemente" },
+  { method: "Transferência Científica", value: "Até 1d6%", cost: "Alvo: Resiliência CD 20" },
+] as const;
+
+export const CORRUPTION_AS_RESOURCE = [
+  "Pagar 5% de Corrupção: +50% ao efeito de um poder.",
+  "Pagar 10%: ignora custos de Vitalidade para um efeito maior.",
+  "Nunca reduz abaixo de 5% por métodos comuns.",
+] as const;
+
+// Cap. 1.4 — Custos e recuperação de Sanidade
+export const SANITY_COSTS = [
+  { event: "Falha em teste de Sanidade", value: "-1 PS" },
+  { event: "Ver ou enfrentar anomalia leve", value: "-1 PS" },
+  { event: "Ver ou enfrentar anomalia grave", value: "-2 PS" },
+  { event: "Contato direto com entidade cósmica", value: "-3 PS" },
+  { event: "Usar poder de nível 5 sem controle", value: "-1 PS" },
+  { event: "Morte de aliado próximo em cena", value: "-1 PS" },
+] as const;
+
+export const SANITY_RECOVERY = [
+  { method: "Descanso curto (10–15 min)", value: "+1 PS", condition: "Ambiente seguro" },
+  { method: "Descanso longo (8 horas)", value: "+1d4 PS", condition: "Local protegido" },
+  { method: "Apoio de aliado (diálogo genuíno)", value: "+1 PS", condition: "1x/sessão por aliado" },
+  { method: "Ritual de Harmonização Mental", value: "+1d6 PS", condition: "Requer Éter ou Luz, 1 cena" },
+  { method: "Purificação por Relíquia Solar", value: "+2d4 PS", condition: "Lanterna Solar sintonizada" },
+  { method: "Conquista narrativa significativa", value: "+1d4 PS", condition: "A critério do Narrador" },
+] as const;
+
+// Cap. 2.2 — Condições
+export const CONDITIONS = [
+  { name: "Atordoado", effect: "Perde a Ação Principal.", duration: "1 turno (Res. CD 10)", removal: "Descanso curto ou cura." },
+  { name: "Cego", effect: "-5 em testes visuais.", duration: "Ferimento/efeito", removal: "Remédio ou ritual." },
+  { name: "Sangrando", effect: "Perde 1d4 PV por turno.", duration: "Até estancar", removal: "Medicina CD 12." },
+  { name: "Enraizado", effect: "Não pode mover-se.", duration: "Força CD 15", removal: "Teste de Força ou perícia." },
+  { name: "Corrompido (suave)", effect: "Bônus em ataque, penalidade social.", duration: "Persistente", removal: "Reduzir Corrupção." },
+  { name: "Deslocado", effect: "Gravidade instável; -2 Defesa/DES.", duration: "Variável", removal: "Estabilização." },
+  { name: "Dominado", effect: "Age conforme o controlador.", duration: "Variável", removal: "Resiliência CD alto ou ritual." },
+  { name: "Iludido", effect: "-3 em testes intelectuais.", duration: "Até clarificação", removal: "Efeito revelador." },
+  { name: "Assombrado", effect: "-2 em testes mentais.", duration: "Até exorcismo", removal: "Exorcismo ou ritual." },
+  { name: "Fragmentado", effect: "Corpo entre planos; vulnerável a Éter.", duration: "Progressiva", removal: "Intervenção drástica." },
+] as const;
+
+// Cap. 1.2 — Estrutura de rodada
+export const ROUND_RULES = [
+  "Cada rodada dura 6 segundos. Iniciativa: 1d20 + Destreza (empate pelo maior Intelecto).",
+  "Ação Principal: atacar, usar poder, ritual curto, item anômalo ou Relíquia.",
+  "Ação Menor: mover-se, sacar arma, usar item comum ou dispositivo preparado.",
+  "Reação: aparar, interromper, contra-atacar (fora do turno).",
+  "Deslocamento base 9 m por rodada; correr dobra, terreno difícil reduz à metade.",
+] as const;
+
+
 
 // Perícias oficiais (Cap. 4.3)
 export const SKILLS: { key: string; name: string; attr: AttributeKey }[] = [
