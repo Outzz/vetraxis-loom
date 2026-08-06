@@ -89,9 +89,10 @@ function CharacterSheet() {
   const [c, setC] = useState<Character | null>(null);
   const [loading, setLoading] = useState(true);
   const [log, setLog] = useState<string[]>([]);
-  const [tab, setTab] = useState<"stats" | "skills" | "inventory" | "powers" | "notes">(
-    "stats",
-  );
+  const [tab, setTab] = useState<
+    "stats" | "skills" | "class" | "inventory" | "powers" | "notes"
+  >("stats");
+
 
   async function load() {
     const { data, error } = await supabase
