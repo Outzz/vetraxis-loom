@@ -848,6 +848,14 @@ function SkillsPanel({
                   className="w-12 rounded border border-white/10 bg-black/40 px-1 py-0.5 text-center font-mono text-xs"
                   title="Bônus de perícia"
                 />
+                <button
+                  onClick={() => onRoll(s.key, cd)}
+                  className="rounded border border-ritual-gold/40 px-2 py-1 text-[10px] uppercase tracking-widest text-ritual-gold hover:bg-ritual-gold/10"
+                  title={`1d20 ${total >= 0 ? "+" : ""}${total} vs CD ${cd}`}
+                >
+                  Testar
+                </button>
+
               </div>
             </div>
           );
