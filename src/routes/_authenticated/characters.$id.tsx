@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ATTRIBUTES,
+  CLASSES,
+  CLASS_CHOICE_CORRUPTION,
   CORRUPTION_TIERS,
   DIFFICULTIES,
   ELEMENTS,
@@ -14,12 +16,15 @@ import {
   maxHP,
   maxPA,
   maxSanity,
+  trackById,
   type AttributeKey,
+  type CharacterClass,
   type CosmicElement,
   type Relic,
 } from "@/lib/game-data";
 import { rollTest, rollDice } from "@/lib/dice";
 import { pushRoll } from "@/lib/dice-store";
+
 
 export const Route = createFileRoute("/_authenticated/characters/$id")({
   head: () => ({
