@@ -47,8 +47,12 @@ type Character = {
   concept: string | null;
   origin: string | null;
   level: number;
+  xp: number;
+  character_class: CharacterClass | null;
+  track: string | null;
   element: CosmicElement | null;
   relic: Relic | null;
+
   str_score: number;
   dex_score: number;
   int_score: number;
