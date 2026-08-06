@@ -527,9 +527,8 @@ function CharacterSheet() {
                 <div
                   key={t.name}
                   className={`flex items-center gap-3 rounded border-l-2 pl-3 text-xs ${
-                    c.corruption <= t.max && c.corruption > (CORRUPTION_TIERS.find((x) => x.max === t.max - 20)?.max ?? -1)
-                      ? "opacity-100"
-                      : "opacity-40"
+                    tier.name === t.name ? "opacity-100" : "opacity-40"
+
                   }`}
                   style={{ borderColor: t.color }}
                 >
