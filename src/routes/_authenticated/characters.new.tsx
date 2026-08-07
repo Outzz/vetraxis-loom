@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { prepareCharacterPortrait } from "@/lib/character-image";
 import {
   ATTRIBUTES,
   ATTR_MAX_START,
@@ -50,6 +51,8 @@ function NewCharacter() {
   const [name, setName] = useState("");
   const [concept, setConcept] = useState("");
   const [origin, setOrigin] = useState("");
+  const [portraitUrl, setPortraitUrl] = useState<string | null>(null);
+  const [preparingPortrait, setPreparingPortrait] = useState(false);
   const [attrs, setAttrs] = useState<Record<AttributeKey, number>>({
     str: ATTR_START,
     dex: ATTR_START,
@@ -134,6 +137,7 @@ function NewCharacter() {
         name: name.trim(),
         concept: concept.trim() || null,
         origin: origin.trim() || null,
+        portrait_url: portraitUrl,
         element: null,
         relic: null,
         character_class: null,
@@ -209,6 +213,49 @@ function NewCharacter() {
             onChange={setConcept}
             placeholder="Investigador atormentado por visões"
           />
+          <div>
+            <p className="ml-1 text-[10px] uppercase tracking-widest text-white/40">
+              Retrato (opcional)
+            </p>
+            <div className="mt-1.5 flex items-center gap-4 rounded-lg border border-white/5 bg-black/30 p-3">
+              <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/10 bg-abyss text-2xl text-white/25">
+                {portraitUrl ? (
+                  <img src={portraitUrl} alt="Prévia do retrato" className="h-full w-full object-cover" />
+                ) : (
+                  "◇"
+                )}
+              </div>
+              <div className="min-w-0 space-y-2">
+                <label className="inline-flex cursor-pointer rounded-md border border-white/10 px-3 py-2 text-[10px] uppercase tracking-widest text-white/65 hover:border-ritual-gold hover:text-ritual-gold">
+                  {preparingPortrait ? "Preparando…" : "Escolher imagem"}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    disabled={preparingPortrait}
+                    className="sr-only"
+                    onChange={async (event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) return;
+                      setPreparingPortrait(true);
+                      try {
+                        setPortraitUrl(await prepareCharacterPortrait(file));
+                      } catch (error) {
+                        toast.error(error instanceof Error ? error.message : "Imagem inválida.");
+                      } finally {
+                        setPreparingPortrait(false);
+                      }
+                    }}
+                  />
+                </label>
+                {portraitUrl && (
+                  <button type="button" onClick={() => setPortraitUrl(null)} className="block text-[10px] uppercase tracking-widest text-corruption/70 hover:text-corruption">
+                    Remover retrato
+                  </button>
+                )}
+                <p className="text-[10px] text-white/35">JPG, PNG ou WebP. A imagem será otimizada.</p>
+              </div>
+            </div>
+          </div>
           <div>
             <label
               htmlFor="character-campaign"
@@ -338,7 +385,7 @@ function NewCharacter() {
           </Link>
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || preparingPortrait}
             className="rounded-md bg-ritual-gold px-6 py-3 text-xs uppercase tracking-[0.25em] text-abyss transition-colors hover:bg-ritual-gold/90 disabled:opacity-50"
           >
             {saving ? "Manifestando…" : "Selar Pacto"}

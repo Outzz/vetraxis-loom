@@ -32,6 +32,7 @@ type Character = {
   pa_max: number;
   corruption: number;
   campaign_id: string | null;
+  portrait_url: string | null;
 };
 
 function CharactersPage() {
@@ -117,8 +118,11 @@ function CharCard({ c, i }: { c: Character; i: number }) {
         animationDelay: `${i * 80}ms`,
       }}
     >
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="ritual-title text-2xl text-foreground group-hover:text-ritual-gold">
+      <div className="mb-3 flex items-center gap-3">
+        <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/10 bg-abyss text-white/25">
+          {c.portrait_url ? <img src={c.portrait_url} alt="" className="h-full w-full object-cover" /> : "◇"}
+        </div>
+        <h3 className="min-w-0 flex-1 truncate ritual-title text-2xl text-foreground group-hover:text-ritual-gold">
           {c.name}
         </h3>
         <span className="font-mono text-[10px] uppercase text-white/40">Nv {c.level}</span>

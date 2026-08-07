@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { CREATURES, THREATS } from "@/lib/bestiary";
 import { ELEMENTS } from "@/lib/game-data";
@@ -22,6 +23,7 @@ import {
 } from "@/lib/combat";
 
 export const Route = createFileRoute("/_authenticated/combate")({
+  validateSearch: z.object({ campaign: z.string().uuid().optional() }),
   head: () => ({
     meta: [
       { title: "Mesa de Combate — Anomalia Cósmica" },
@@ -48,15 +50,46 @@ function elColor(el?: string) {
 }
 
 function Combate() {
+  const { campaign: campaignId } = Route.useSearch();
+  const navigate = useNavigate();
   const [state, setState] = useState<EncounterState>(EMPTY_ENCOUNTER);
   const [chars, setChars] = useState<CharacterLike[]>([]);
+  const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [hydrated, setHydrated] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const syncedRef = useRef<Record<string, string>>({});
+  const skipNextPersistRef = useRef(false);
 
   useEffect(() => {
-    const loaded = loadEncounter();
+    let active = true;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    async function hydrate() {
+      setHydrated(false);
+      const { data: auth } = await supabase.auth.getUser();
+      if (!active || !auth.user) return;
+      setUserId(auth.user.id);
+
+      const { data: availableCampaigns } = await supabase
+        .from("campaigns")
+        .select("id, name")
+        .order("name");
+      if (!active) return;
+      setCampaigns(availableCampaigns ?? []);
+
+      let loaded = loadEncounter();
+      if (campaignId) {
+        const { data, error } = await supabase
+          .from("campaign_encounters")
+          .select("state")
+          .eq("campaign_id", campaignId)
+          .maybeSingle();
+        if (error) toast.error(`Não foi possível abrir a mesa: ${error.message}`);
+        loaded = data?.state ? (data.state as unknown as EncounterState) : EMPTY_ENCOUNTER;
+      }
+
     const queued = drainQueue();
     if (queued.length) {
       const added = queued
@@ -73,16 +106,19 @@ function Combate() {
         ...loaded.log,
       ];
     }
-    setState(loaded);
-    setHydrated(true);
+      if (!active) return;
+      setState({ ...EMPTY_ENCOUNTER, ...loaded });
 
-    supabase
+      let charactersQuery = supabase
       .from("characters")
       .select(
         "id,name,concept,element,hp_current,hp_max,sanity_current,sanity_max,pa_current,pa_max,corruption,dex_score",
       )
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
+      .order("created_at", { ascending: false });
+      if (campaignId) charactersQuery = charactersQuery.eq("campaign_id", campaignId);
+      else charactersQuery = charactersQuery.eq("owner_id", auth.user.id);
+      charactersQuery.then(({ data }) => {
+        if (!active) return;
         const list = (data as CharacterLike[]) ?? [];
         setChars(list);
         // A ficha é a fonte da verdade ao abrir a mesa.
@@ -107,12 +143,53 @@ function Combate() {
             return synced;
           }),
         }));
+        setHydrated(true);
       });
-  }, []);
+
+      if (campaignId) {
+        channel = supabase
+          .channel(`campaign-encounter-${campaignId}`)
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "campaign_encounters", filter: `campaign_id=eq.${campaignId}` },
+            (payload) => {
+              const next = (payload.new as { state?: unknown; updated_by?: string } | undefined);
+              if (!next?.state || next.updated_by === auth.user.id) return;
+              skipNextPersistRef.current = true;
+              setState({ ...EMPTY_ENCOUNTER, ...(next.state as EncounterState) });
+            },
+          )
+          .subscribe();
+      }
+    }
+
+    hydrate();
+    return () => {
+      active = false;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [campaignId]);
 
   useEffect(() => {
-    if (hydrated) saveEncounter(state);
-  }, [state, hydrated]);
+    if (!hydrated) return;
+    if (skipNextPersistRef.current) {
+      skipNextPersistRef.current = false;
+      return;
+    }
+    if (!campaignId) {
+      saveEncounter(state);
+      return;
+    }
+    if (!userId) return;
+    const timer = setTimeout(async () => {
+      const { error } = await supabase.from("campaign_encounters").upsert(
+        { campaign_id: campaignId, state: state as never, updated_by: userId },
+        { onConflict: "campaign_id" },
+      );
+      if (error) toast.error(`Falha ao compartilhar a mesa: ${error.message}`);
+    }, 180);
+    return () => clearTimeout(timer);
+  }, [state, hydrated, campaignId, userId]);
 
   // Sincroniza PV/PS/PA/Corrupção dos Portadores de volta para as fichas.
   useEffect(() => {
@@ -306,8 +383,20 @@ function Combate() {
           <p className="ritual-eyebrow">Ritual de Confronto</p>
           <h1 className="ritual-title text-6xl text-foreground">Mesa de Combate</h1>
           <p className="max-w-xl text-sm italic text-white/55">
-            Iniciativa, ataques, dano e Pontos de Ação resolvidos automaticamente.
+            {campaignId
+              ? "Mesa compartilhada em tempo real com todos os participantes da campanha."
+              : "Escolha uma campanha para compartilhar o encontro com o grupo."}
           </p>
+          <select
+            value={campaignId ?? ""}
+            onChange={(event) => navigate({ to: "/combate", search: event.target.value ? { campaign: event.target.value } : {} })}
+            className="mt-3 min-w-64 rounded-md border border-white/10 bg-abyss px-3 py-2 text-xs text-foreground focus:border-prismatic focus:outline-none"
+          >
+            <option value="">Mesa pessoal neste dispositivo</option>
+            {campaigns.map((campaign) => (
+              <option key={campaign.id} value={campaign.id}>{campaign.name} · compartilhada</option>
+            ))}
+          </select>
         </div>
         <div className="flex items-center gap-3">
           {state.started && (
