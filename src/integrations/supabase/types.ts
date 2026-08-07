@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      campaign_encounters: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          id: string
+          state: Json
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          id?: string
+          state?: Json
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          state?: Json
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_encounters_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_members: {
         Row: {
           campaign_id: string
