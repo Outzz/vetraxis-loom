@@ -60,6 +60,7 @@ function Combate() {
   const [hydrated, setHydrated] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const syncedRef = useRef<Record<string, string>>({});
+  const skipNextPersistRef = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -154,6 +155,7 @@ function Combate() {
             (payload) => {
               const next = (payload.new as { state?: unknown; updated_by?: string } | undefined);
               if (!next?.state || next.updated_by === auth.user.id) return;
+              skipNextPersistRef.current = true;
               setState({ ...EMPTY_ENCOUNTER, ...(next.state as EncounterState) });
             },
           )
@@ -170,6 +172,10 @@ function Combate() {
 
   useEffect(() => {
     if (!hydrated) return;
+    if (skipNextPersistRef.current) {
+      skipNextPersistRef.current = false;
+      return;
+    }
     if (!campaignId) {
       saveEncounter(state);
       return;
