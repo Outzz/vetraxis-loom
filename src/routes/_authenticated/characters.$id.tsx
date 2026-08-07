@@ -24,6 +24,7 @@ import {
 } from "@/lib/game-data";
 import { rollTest, rollDice } from "@/lib/dice";
 import { pushRoll } from "@/lib/dice-store";
+import { prepareCharacterPortrait } from "@/lib/character-image";
 
 
 export const Route = createFileRoute("/_authenticated/characters/$id")({
@@ -72,6 +73,7 @@ type Character = {
   powers: { name: string; text: string }[];
   scars: string[];
   notes: string | null;
+  portrait_url: string | null;
 };
 
 const ATTR_TO_SCORE: Record<AttributeKey, keyof Character> = {
@@ -89,6 +91,7 @@ function CharacterSheet() {
   const [c, setC] = useState<Character | null>(null);
   const [loading, setLoading] = useState(true);
   const [log, setLog] = useState<string[]>([]);
+  const [preparingPortrait, setPreparingPortrait] = useState(false);
   const [tab, setTab] = useState<
     "stats" | "skills" | "class" | "inventory" | "powers" | "notes"
   >("stats");
@@ -265,7 +268,36 @@ function CharacterSheet() {
         className="glass-panel mb-6 rounded-2xl p-6"
         style={{ animation: "fade-up 0.6s var(--ease-out-expo) both" }}
       >
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start gap-5">
+          <div className="group relative flex size-28 shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/10 bg-abyss text-3xl text-white/25">
+            {c.portrait_url ? (
+              <img src={c.portrait_url} alt={`Retrato de ${c.name}`} className="h-full w-full object-cover" />
+            ) : (
+              "◇"
+            )}
+            <label className="absolute inset-x-0 bottom-0 cursor-pointer bg-abyss/90 py-2 text-center text-[9px] uppercase tracking-widest text-white/70 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+              {preparingPortrait ? "Preparando…" : "Trocar imagem"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={preparingPortrait}
+                className="sr-only"
+                onChange={async (event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  setPreparingPortrait(true);
+                  try {
+                    await update({ portrait_url: await prepareCharacterPortrait(file) });
+                    toast.success("Retrato atualizado.");
+                  } catch (error) {
+                    toast.error(error instanceof Error ? error.message : "Imagem inválida.");
+                  } finally {
+                    setPreparingPortrait(false);
+                  }
+                }}
+              />
+            </label>
+          </div>
           <div className="flex-1 min-w-0">
             <input
               value={c.name}

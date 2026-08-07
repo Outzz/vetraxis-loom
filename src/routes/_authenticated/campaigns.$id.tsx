@@ -155,8 +155,8 @@ function CampaignDetail() {
 
       <div className="mt-8 flex flex-wrap gap-2 border-b border-white/10 pb-6">
         <Link to="/characters/new" search={{ campaign: campaign.id }} className="flex items-center gap-2 rounded-md bg-prismatic px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-prismatic/80"><UserRoundPlus className="size-4" />Criar Portador</Link>
-        <Link to="/combate" className="flex items-center gap-2 rounded-md border border-prismatic/50 px-4 py-2.5 text-xs text-foreground hover:bg-prismatic/10"><Swords className="size-4" />Iniciar Combate</Link>
-        <Link to="/bestiario" className="flex items-center gap-2 rounded-md border border-white/10 px-4 py-2.5 text-xs text-white/65 hover:border-white/30 hover:text-foreground"><BookOpen className="size-4" />Bestiário</Link>
+        <Link to="/combate" search={{ campaign: campaign.id }} className="flex items-center gap-2 rounded-md border border-prismatic/50 px-4 py-2.5 text-xs text-foreground hover:bg-prismatic/10"><Swords className="size-4" />Abrir Mesa</Link>
+        <Link to="/bestiario" search={{ campaign: campaign.id }} className="flex items-center gap-2 rounded-md border border-white/10 px-4 py-2.5 text-xs text-white/65 hover:border-white/30 hover:text-foreground"><BookOpen className="size-4" />Bestiário</Link>
       </div>
 
       <header
@@ -206,7 +206,7 @@ function CampaignDetail() {
       <nav className="mt-10 flex gap-8 border-b border-white/10 text-xs font-semibold uppercase tracking-widest">
         <span className="border-b-2 border-prismatic pb-3 text-foreground">Portadores</span>
         <span className="pb-3 text-white/35">Jogadores</span>
-        <Link to="/combate" className="pb-3 text-white/35 hover:text-foreground">Combates</Link>
+        <Link to="/combate" search={{ campaign: campaign.id }} className="pb-3 text-white/35 hover:text-foreground">Combates</Link>
       </nav>
 
       <section className="mt-8">

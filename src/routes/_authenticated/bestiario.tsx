@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { z } from "zod";
 import { queueCreature } from "@/lib/combat";
 import {
   BEHAVIORS,
@@ -12,6 +13,7 @@ import {
 import { ELEMENTS, type CosmicElement } from "@/lib/game-data";
 
 export const Route = createFileRoute("/_authenticated/bestiario")({
+  validateSearch: z.object({ campaign: z.string().uuid().optional() }),
   head: () => ({
     meta: [
       { title: "Bestiário de Vetraxis — Anomalia Cósmica" },
@@ -36,6 +38,7 @@ export const Route = createFileRoute("/_authenticated/bestiario")({
 type Filter<T> = T | "all";
 
 function Bestiario() {
+  const { campaign } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [threat, setThreat] = useState<Filter<ThreatLevel>>("all");
   const [element, setElement] = useState<Filter<CosmicElement>>("all");
@@ -162,7 +165,7 @@ function Bestiario() {
 
         <aside className="lg:sticky lg:top-8 lg:self-start">
           {active ? (
-            <CreatureDetail creature={active} />
+              <CreatureDetail creature={active} campaignId={campaign} />
           ) : (
             <div className="glass-panel rounded-2xl p-8 text-center text-sm text-white/40">
               Selecione uma criatura para consultar a ficha completa.
@@ -295,7 +298,7 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function CreatureDetail({ creature: c }: { creature: Creature }) {
+function CreatureDetail({ creature: c, campaignId }: { creature: Creature; campaignId?: string }) {
   const navigate = useNavigate();
   const el = ELEMENTS[c.element];
   const th = THREATS[c.threat];
@@ -361,7 +364,7 @@ function CreatureDetail({ creature: c }: { creature: Creature }) {
       <button
         onClick={() => {
           queueCreature(c.id);
-          navigate({ to: "/combate" });
+           navigate({ to: "/combate", search: campaignId ? { campaign: campaignId } : {} });
         }}
         className="w-full rounded-md bg-ritual-gold py-3 text-xs uppercase tracking-[0.2em] text-abyss transition-colors hover:bg-ritual-gold/90"
       >
