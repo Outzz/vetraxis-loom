@@ -155,12 +155,52 @@ function Combate() {
             (payload) => {
               const next = (payload.new as { state?: unknown; updated_by?: string } | undefined);
               if (!next?.state || next.updated_by === auth.user.id) return;
+              const incoming = { ...EMPTY_ENCOUNTER, ...(next.state as EncounterState) };
+              setState((prev) => {
+                const before = prev.combatants.map((x) => x.id);
+                const after = incoming.combatants.map((x) => x.id);
+                const added = incoming.combatants.filter((x) => !before.includes(x.id));
+                const removed = prev.combatants.filter((x) => !after.includes(x.id));
+                for (const a of added) toast(`${a.name} entrou na mesa de combate.`);
+                for (const r of removed) toast(`${r.name} saiu da mesa de combate.`);
+                return incoming;
+              });
               skipNextPersistRef.current = true;
-              setState({ ...EMPTY_ENCOUNTER, ...(next.state as EncounterState) });
+            },
+          )
+          // PV/PS/PA/Corrupção alterados na ficha refletem na mesa de todos.
+          .on(
+            "postgres_changes",
+            { event: "UPDATE", schema: "public", table: "characters", filter: `campaign_id=eq.${campaignId}` },
+            (payload) => {
+              const ch = payload.new as CharacterLike | undefined;
+              if (!ch?.id) return;
+              setChars((list) => list.map((x) => (x.id === ch.id ? { ...x, ...ch } : x)));
+              setState((s) => ({
+                ...s,
+                combatants: s.combatants.map((cmb) => {
+                  if (cmb.kind !== "character" || cmb.sourceId !== ch.id) return cmb;
+                  const synced: Combatant = {
+                    ...cmb,
+                    hpCurrent: ch.hp_current,
+                    hpMax: ch.hp_max,
+                    sanityCurrent: ch.sanity_current ?? cmb.sanityCurrent,
+                    sanityMax: ch.sanity_max ?? cmb.sanityMax,
+                    paCurrent: ch.pa_current,
+                    paMax: ch.pa_max,
+                    corruption: ch.corruption ?? cmb.corruption,
+                    ca: 10 + (ch.dex_score ?? 0),
+                    defeated: ch.hp_current === 0,
+                  };
+                  syncedRef.current[cmb.sourceId] = resourceKey(synced);
+                  return synced;
+                }),
+              }));
             },
           )
           .subscribe();
       }
+
     }
 
     hydrate();
