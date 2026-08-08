@@ -637,6 +637,25 @@ function CharacterSheet() {
               </ul>
             )}
           </div>
+          {c.character_class && (
+            <div className="glass-panel rounded-2xl p-4">
+              <p className="ritual-eyebrow mb-2">Bônus de Classe aplicados</p>
+              <ul className="space-y-1 text-[11px] text-white/60">
+                {bonuses.hp > 0 && <li>• +{bonuses.hp} PV máximos</li>}
+                {bonuses.sanity > 0 && <li>• +{bonuses.sanity} PS máximos</li>}
+                {bonuses.pa > 0 && <li>• +{bonuses.pa} PA máximos</li>}
+                {bonuses.defense > 0 && <li>• +{bonuses.defense} Defesa</li>}
+                {bonuses.proficiencies.map((p) => (
+                  <li key={p}>• {p}</li>
+                ))}
+                {bonuses.features.map((f) => (
+                  <li key={f.name}>
+                    • <span className="text-ritual-gold/80">{f.name}:</span> {f.text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="glass-panel rounded-2xl p-4">
             <p className="ritual-eyebrow mb-2">Rolar teste rápido</p>
             <div className="space-y-2">
@@ -650,7 +669,26 @@ function CharacterSheet() {
           </div>
         </aside>
       </div>
+
+      {c.corruption >= CLASS_CHOICE_CORRUPTION && (!c.character_class || !c.track) && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-abyss/90 p-6 backdrop-blur-sm">
+          <div className="glass-panel my-8 w-full max-w-3xl rounded-2xl p-6">
+            <p className="ritual-eyebrow">Assimilação {c.corruption}%</p>
+            <h2 className="ritual-title mt-1 text-3xl text-foreground">
+              A Anomalia exige uma forma
+            </h2>
+            <p className="mt-2 max-w-xl text-sm text-white/55">
+              {c.name} atingiu {CLASS_CHOICE_CORRUPTION}% de Corrupção. Escolha a Classe e a
+              Trilha para continuar — os bônus são aplicados automaticamente à ficha.
+            </p>
+            <div className="mt-6">
+              <ClassPanel c={c} onUpdate={update} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+
   );
 }
 
