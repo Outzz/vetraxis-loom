@@ -193,25 +193,45 @@ function CharacterSheet() {
 
   const derived = useMemo(() => {
     if (!c) return null;
-    return {
-      hp: maxHP(c.res_score),
-      sanity: maxSanity(c.int_score),
-      pa: maxPA(c.int_score),
-    };
+    return derivedStats({
+      res: c.res_score,
+      int: c.int_score,
+      dex: c.dex_score,
+      cls: c.character_class,
+    });
   }, [c]);
 
-  async function recalcMax() {
+  const bonuses = classBonuses(c?.character_class ?? null);
+
+  async function recalcMax(silent = false) {
     if (!c || !derived) return;
+    const gainHp = Math.max(0, derived.hp - c.hp_max);
+    const gainPs = Math.max(0, derived.sanity - c.sanity_max);
+    const gainPa = Math.max(0, derived.pa - c.pa_max);
     await update({
       hp_max: derived.hp,
       sanity_max: derived.sanity,
       pa_max: derived.pa,
-      hp_current: Math.min(c.hp_current, derived.hp),
-      sanity_current: Math.min(c.sanity_current, derived.sanity),
-      pa_current: Math.min(c.pa_current, derived.pa),
+      hp_current: Math.min(derived.hp, c.hp_current + gainHp),
+      sanity_current: Math.min(derived.sanity, c.sanity_current + gainPs),
+      pa_current: Math.min(derived.pa, c.pa_current + gainPa),
     });
-    toast.success("Recursos recalculados.");
+    if (!silent) toast.success("Recursos recalculados.");
   }
+
+  // Aplica automaticamente os bônus de classe assim que a classe é escolhida/alterada.
+  useEffect(() => {
+    if (!c || !derived) return;
+    if (
+      c.hp_max === derived.hp &&
+      c.sanity_max === derived.sanity &&
+      c.pa_max === derived.pa
+    )
+      return;
+    recalcMax(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [c?.character_class, derived?.hp, derived?.sanity, derived?.pa]);
+
 
   async function handleDelete() {
     if (!c) return;
