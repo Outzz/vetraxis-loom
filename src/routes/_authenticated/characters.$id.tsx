@@ -357,6 +357,16 @@ function CharacterSheet() {
                   ⟡ {relic.name}
                 </span>
               )}
+              {c.character_class && (
+                <span className="rounded-full bg-ritual-gold/15 px-2 py-0.5 text-[10px] uppercase tracking-widest text-ritual-gold">
+                  {CLASSES[c.character_class].name}
+                  {c.track ? ` · ${trackById(c.character_class, c.track)?.name ?? ""}` : ""}
+                </span>
+              )}
+              <span className="rounded-full border border-white/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-white/60">
+                Defesa {derived?.defense ?? 10}
+              </span>
+
               <button
                 onClick={() => recalcMax()}
                 className="ml-auto text-[10px] uppercase tracking-widest text-white/40 hover:text-ritual-gold"
