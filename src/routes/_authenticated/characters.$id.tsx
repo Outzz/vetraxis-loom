@@ -12,11 +12,11 @@ import {
   RELICS,
   SKILLS,
   attrModifier,
+  classBonuses,
   corruptionTier,
-  maxHP,
-  maxPA,
-  maxSanity,
+  derivedStats,
   trackById,
+
   type AttributeKey,
   type CharacterClass,
   type CosmicElement,
@@ -193,25 +193,45 @@ function CharacterSheet() {
 
   const derived = useMemo(() => {
     if (!c) return null;
-    return {
-      hp: maxHP(c.res_score),
-      sanity: maxSanity(c.int_score),
-      pa: maxPA(c.int_score),
-    };
+    return derivedStats({
+      res: c.res_score,
+      int: c.int_score,
+      dex: c.dex_score,
+      cls: c.character_class,
+    });
   }, [c]);
 
-  async function recalcMax() {
+  const bonuses = classBonuses(c?.character_class ?? null);
+
+  async function recalcMax(silent = false) {
     if (!c || !derived) return;
+    const gainHp = Math.max(0, derived.hp - c.hp_max);
+    const gainPs = Math.max(0, derived.sanity - c.sanity_max);
+    const gainPa = Math.max(0, derived.pa - c.pa_max);
     await update({
       hp_max: derived.hp,
       sanity_max: derived.sanity,
       pa_max: derived.pa,
-      hp_current: Math.min(c.hp_current, derived.hp),
-      sanity_current: Math.min(c.sanity_current, derived.sanity),
-      pa_current: Math.min(c.pa_current, derived.pa),
+      hp_current: Math.min(derived.hp, c.hp_current + gainHp),
+      sanity_current: Math.min(derived.sanity, c.sanity_current + gainPs),
+      pa_current: Math.min(derived.pa, c.pa_current + gainPa),
     });
-    toast.success("Recursos recalculados.");
+    if (!silent) toast.success("Recursos recalculados.");
   }
+
+  // Aplica automaticamente os bônus de classe assim que a classe é escolhida/alterada.
+  useEffect(() => {
+    if (!c || !derived) return;
+    if (
+      c.hp_max === derived.hp &&
+      c.sanity_max === derived.sanity &&
+      c.pa_max === derived.pa
+    )
+      return;
+    recalcMax(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [c?.character_class, derived?.hp, derived?.sanity, derived?.pa]);
+
 
   async function handleDelete() {
     if (!c) return;
@@ -337,8 +357,18 @@ function CharacterSheet() {
                   ⟡ {relic.name}
                 </span>
               )}
+              {c.character_class && (
+                <span className="rounded-full bg-ritual-gold/15 px-2 py-0.5 text-[10px] uppercase tracking-widest text-ritual-gold">
+                  {CLASSES[c.character_class].name}
+                  {c.track ? ` · ${trackById(c.character_class, c.track)?.name ?? ""}` : ""}
+                </span>
+              )}
+              <span className="rounded-full border border-white/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-white/60">
+                Defesa {derived?.defense ?? 10}
+              </span>
+
               <button
-                onClick={recalcMax}
+                onClick={() => recalcMax()}
                 className="ml-auto text-[10px] uppercase tracking-widest text-white/40 hover:text-ritual-gold"
                 title="Recalcula PV/PS/PA máximos com base nos atributos e nível"
               >
@@ -607,6 +637,25 @@ function CharacterSheet() {
               </ul>
             )}
           </div>
+          {c.character_class && (
+            <div className="glass-panel rounded-2xl p-4">
+              <p className="ritual-eyebrow mb-2">Bônus de Classe aplicados</p>
+              <ul className="space-y-1 text-[11px] text-white/60">
+                {bonuses.hp > 0 && <li>• +{bonuses.hp} PV máximos</li>}
+                {bonuses.sanity > 0 && <li>• +{bonuses.sanity} PS máximos</li>}
+                {bonuses.pa > 0 && <li>• +{bonuses.pa} PA máximos</li>}
+                {bonuses.defense > 0 && <li>• +{bonuses.defense} Defesa</li>}
+                {bonuses.proficiencies.map((p) => (
+                  <li key={p}>• {p}</li>
+                ))}
+                {bonuses.features.map((f) => (
+                  <li key={f.name}>
+                    • <span className="text-ritual-gold/80">{f.name}:</span> {f.text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="glass-panel rounded-2xl p-4">
             <p className="ritual-eyebrow mb-2">Rolar teste rápido</p>
             <div className="space-y-2">
@@ -620,7 +669,26 @@ function CharacterSheet() {
           </div>
         </aside>
       </div>
+
+      {c.corruption >= CLASS_CHOICE_CORRUPTION && (!c.character_class || !c.track) && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-abyss/90 p-6 backdrop-blur-sm">
+          <div className="glass-panel my-8 w-full max-w-3xl rounded-2xl p-6">
+            <p className="ritual-eyebrow">Assimilação {c.corruption}%</p>
+            <h2 className="ritual-title mt-1 text-3xl text-foreground">
+              A Anomalia exige uma forma
+            </h2>
+            <p className="mt-2 max-w-xl text-sm text-white/55">
+              {c.name} atingiu {CLASS_CHOICE_CORRUPTION}% de Corrupção. Escolha a Classe e a
+              Trilha para continuar — os bônus são aplicados automaticamente à ficha.
+            </p>
+            <div className="mt-6">
+              <ClassPanel c={c} onUpdate={update} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+
   );
 }
 
@@ -743,12 +811,22 @@ function ClassPanel({
 
       {cls && (
         <div>
-          <p className="ritual-eyebrow mb-2">Recursos de Classe</p>
+          <p className="ritual-eyebrow mb-2">Recursos de Classe (aplicados)</p>
           <ul className="space-y-1 text-xs text-white/60">
             {cls.resources.map((r) => (
               <li key={r}>• {r}</li>
             ))}
           </ul>
+          <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-ritual-gold/80">
+            Auto: PV {classBonuses(c.character_class).hp >= 0 ? "+" : ""}
+            {classBonuses(c.character_class).hp} · PS +
+            {classBonuses(c.character_class).sanity} · PA +
+            {classBonuses(c.character_class).pa} · Perícias recomendadas:{" "}
+            {classBonuses(c.character_class)
+              .recommendedSkills.map((k) => SKILLS.find((s) => s.key === k)?.name ?? k)
+              .join(", ")}
+          </p>
+
           <p className="mt-3 text-[11px] text-white/50">
             <span className="uppercase tracking-widest text-ritual-gold/80">
               Despertar (Nv 10) — {cls.awakening.name}:

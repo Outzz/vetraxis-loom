@@ -172,8 +172,10 @@ export interface CharacterLike {
 }
 
 export function modifier(score: number) {
-  return Math.floor((score - 10) / 2);
+  // No Anomalia Cósmica o valor do atributo já é o bônus.
+  return score;
 }
+
 
 export function combatantFromCharacter(
   ch: CharacterLike,

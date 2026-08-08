@@ -551,23 +551,144 @@ export function attrModifier(score: number): number {
   return score;
 }
 
-// Fórmulas oficiais (Cap. 1.6 e 4.1)
-export function maxHP(res: number): number {
-  return 10 + res * 2;
+/* ---------- Bônus automáticos de Classe (Cap. 4.2) ---------- */
+
+export interface ClassBonuses {
+  hp: number;
+  sanity: number;
+  pa: number;
+  defense: number;
+  proficiencies: string[];
+  recommendedSkills: string[];
+  features: { name: string; text: string }[];
 }
 
-export function maxSanity(int: number): number {
-  return 10 + int * 2;
+export const CLASS_BONUSES: Record<CharacterClass, ClassBonuses> = {
+  confrontador: {
+    hp: 4,
+    sanity: 0,
+    pa: 0,
+    defense: 0,
+    proficiencies: [
+      "Armas leves, médias e pesadas",
+      "Proteções leves, médias e pesadas",
+    ],
+    recommendedSkills: ["luta", "mira", "atletismo", "vontade"],
+    features: [
+      {
+        name: "Linha de Frente",
+        text: "1x por rodada, após acertar um ataque: +1d6 de dano extra ou deslocar-se 3 m sem provocar reações.",
+      },
+    ],
+  },
+  condutor: {
+    hp: 0,
+    sanity: 0,
+    pa: 2,
+    defense: 0,
+    proficiencies: ["Armas leves e simples", "Proteções leves"],
+    recommendedSkills: ["ocultismo", "ritualismo", "persuasao"],
+    features: [
+      {
+        name: "Sintonia Elemental",
+        text: "Escolha um elemento e aprenda dois poderes de grau 1 associados a ele.",
+      },
+      {
+        name: "Canalização Afinada",
+        text: "1x por cena, repita um teste falho para ativar um poder (mantém o segundo resultado).",
+      },
+    ],
+  },
+  operador: {
+    hp: 0,
+    sanity: 0,
+    pa: 0,
+    defense: 0,
+    proficiencies: ["Armas leves e de fogo médias", "Proteções leves"],
+    recommendedSkills: ["ocultismo", "furtividade", "mira"],
+    features: [
+      {
+        name: "Conhecimento Técnico",
+        text: "+2 em Intelecto para analisar, fabricar, reparar ou operar tecnologia.",
+      },
+      {
+        name: "Inventário Ampliado",
+        text: "Mantém um dispositivo tecnológico ativo além do limite normal.",
+      },
+      {
+        name: "Improvisação",
+        text: "1x por cena, crie uma ferramenta comum temporária com uma Ação Principal.",
+      },
+    ],
+  },
+  sobrevivente: {
+    hp: 0,
+    sanity: 2,
+    pa: 0,
+    defense: 0,
+    proficiencies: ["Armas simples", "Proteções leves"],
+    recommendedSkills: ["vontade", "atletismo", "persuasao"],
+    features: [
+      {
+        name: "Humanidade Preservada",
+        text: "Não começa com poderes elementais; suas habilidades normalmente não geram Corrupção.",
+      },
+      {
+        name: "Teimosia Humana",
+        text: "1x por cena, repita qualquer teste fracassado (mantém o segundo resultado).",
+      },
+    ],
+  },
+};
+
+const NO_BONUS: ClassBonuses = {
+  hp: 0,
+  sanity: 0,
+  pa: 0,
+  defense: 0,
+  proficiencies: [],
+  recommendedSkills: [],
+  features: [],
+};
+
+export function classBonuses(cls?: CharacterClass | null): ClassBonuses {
+  return cls ? CLASS_BONUSES[cls] : NO_BONUS;
 }
 
-export function maxPA(int: number): number {
-  return 10 + int * 2;
+// Fórmulas oficiais (Cap. 1.6 e 4.1) — já somando os bônus de classe.
+export function maxHP(res: number, cls?: CharacterClass | null): number {
+  return 10 + res * 2 + classBonuses(cls).hp;
 }
 
-// Defesa (Cap. 1.5): 10 + Destreza + bônus de armadura
-export function defenseValue(dex: number, armor = 0): number {
-  return 10 + dex + armor;
+export function maxSanity(int: number, cls?: CharacterClass | null): number {
+  return 10 + int * 2 + classBonuses(cls).sanity;
 }
+
+export function maxPA(int: number, cls?: CharacterClass | null): number {
+  return 10 + int * 2 + classBonuses(cls).pa;
+}
+
+// Defesa (Cap. 1.5): 10 + Destreza + bônus de armadura + bônus de classe
+export function defenseValue(dex: number, armor = 0, cls?: CharacterClass | null): number {
+  return 10 + dex + armor + classBonuses(cls).defense;
+}
+
+/** Todos os recursos derivados de uma ficha, já com a classe aplicada. */
+export function derivedStats(input: {
+  res: number;
+  int: number;
+  dex: number;
+  cls?: CharacterClass | null;
+  armor?: number;
+}) {
+  return {
+    hp: maxHP(input.res, input.cls),
+    sanity: maxSanity(input.int, input.cls),
+    pa: maxPA(input.int, input.cls),
+    defense: defenseValue(input.dex, input.armor ?? 0, input.cls),
+  };
+}
+
 
 export function initiative(dex: number): string {
   return `1d20${dex >= 0 ? "+" : ""}${dex}`;
