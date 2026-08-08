@@ -36,6 +36,7 @@ export function FloatingDice() {
   const rolls = useRolls();
   const [open, setOpen] = useState(false);
   const [flash, setFlash] = useState(false);
+  const [visible, setVisible] = useState(false);
   const lastId = useRef<number | null>(null);
 
   const last = rolls[0];
@@ -44,11 +45,21 @@ export function FloatingDice() {
     if (!last || last.id === lastId.current) return;
     lastId.current = last.id;
     setFlash(true);
-    const t = setTimeout(() => setFlash(false), 600);
-    return () => clearTimeout(t);
+    setVisible(true);
+    const flashTimer = setTimeout(() => setFlash(false), 600);
+    // O resultado fica visível por 10 segundos após a rolagem.
+    const hideTimer = setTimeout(() => {
+      setVisible(false);
+      setOpen(false);
+    }, 10000);
+    return () => {
+      clearTimeout(flashTimer);
+      clearTimeout(hideTimer);
+    };
   }, [last]);
 
-  if (!last) return null;
+  if (!last || (!visible && !open)) return null;
+
 
   const tone =
     last.critical === "success"
