@@ -358,7 +358,7 @@ function CharacterSheet() {
                 </span>
               )}
               <button
-                onClick={recalcMax}
+                onClick={() => recalcMax()}
                 className="ml-auto text-[10px] uppercase tracking-widest text-white/40 hover:text-ritual-gold"
                 title="Recalcula PV/PS/PA máximos com base nos atributos e nível"
               >
