@@ -811,12 +811,22 @@ function ClassPanel({
 
       {cls && (
         <div>
-          <p className="ritual-eyebrow mb-2">Recursos de Classe</p>
+          <p className="ritual-eyebrow mb-2">Recursos de Classe (aplicados)</p>
           <ul className="space-y-1 text-xs text-white/60">
             {cls.resources.map((r) => (
               <li key={r}>• {r}</li>
             ))}
           </ul>
+          <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-ritual-gold/80">
+            Auto: PV {classBonuses(c.character_class).hp >= 0 ? "+" : ""}
+            {classBonuses(c.character_class).hp} · PS +
+            {classBonuses(c.character_class).sanity} · PA +
+            {classBonuses(c.character_class).pa} · Perícias recomendadas:{" "}
+            {classBonuses(c.character_class)
+              .recommendedSkills.map((k) => SKILLS.find((s) => s.key === k)?.name ?? k)
+              .join(", ")}
+          </p>
+
           <p className="mt-3 text-[11px] text-white/50">
             <span className="uppercase tracking-widest text-ritual-gold/80">
               Despertar (Nv 10) — {cls.awakening.name}:
