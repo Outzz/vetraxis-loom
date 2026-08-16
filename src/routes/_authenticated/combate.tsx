@@ -115,14 +115,13 @@ function Combate() {
       if (!active) return;
       setState({ ...EMPTY_ENCOUNTER, ...loaded });
 
-      let charactersQuery = supabase
+      const charactersQuery = supabase
       .from("characters")
       .select(
         "id,name,concept,element,portrait_url,hp_current,hp_max,sanity_current,sanity_max,pa_current,pa_max,corruption,dex_score",
       )
+      .eq("campaign_id", campaignId ?? "")
       .order("created_at", { ascending: false });
-      if (campaignId) charactersQuery = charactersQuery.eq("campaign_id", campaignId);
-      else charactersQuery = charactersQuery.eq("owner_id", auth.user.id);
       charactersQuery.then(({ data }) => {
         if (!active) return;
         const list = (data as CharacterLike[]) ?? [];
