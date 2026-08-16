@@ -180,15 +180,7 @@ function AuthPage() {
             </div>
 
             <div className="space-y-3">
-              <button
-                type="button"
-                onClick={handleGoogle}
-                disabled={loading}
-                className="flex w-full items-center justify-center gap-3 rounded-md border border-white/10 bg-white/5 py-3 text-xs uppercase tracking-widest text-foreground transition-colors hover:bg-white/10 disabled:opacity-50"
-              >
-                <GoogleGlyph />
-                Sincronizar Google
-              </button>
+
 
               <button
                 type="button"
