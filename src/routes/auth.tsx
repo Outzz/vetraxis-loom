@@ -103,22 +103,8 @@ function AuthPage() {
     }
   }
 
-  async function handleGoogle() {
-    setLoading(true);
-    try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin + (destination ?? "/dashboard"),
-      });
-      if (result.error) throw result.error;
-      if (!result.redirected) {
-        goToDestination();
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro desconhecido";
-      toast.error(message);
-      setLoading(false);
-    }
-  }
+
+
 
 
   return (
