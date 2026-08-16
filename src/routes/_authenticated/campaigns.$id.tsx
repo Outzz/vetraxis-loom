@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { BookOpen, Copy, Plus, Swords, UserRoundPlus } from "lucide-react";
+import { BookOpen, Copy, Pencil, Plus, Swords, UserRoundPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { prepareCharacterPortrait } from "@/lib/character-image";
 import { ELEMENTS, type CosmicElement } from "@/lib/game-data";
+import { Field, ModalShell } from "./campaigns.index";
 
 export const Route = createFileRoute("/_authenticated/campaigns/$id")({
   head: () => ({
@@ -26,6 +28,7 @@ type Campaign = {
   invite_code: string;
   status: string;
   master_id: string;
+  banner_url: string | null;
 };
 
 type Member = {
@@ -62,6 +65,7 @@ function CampaignDetail() {
   const [pick, setPick] = useState("");
   const [linking, setLinking] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showEdit, setShowEdit] = useState(false);
 
   async function load() {
     const { data: u } = await supabase.auth.getUser();
@@ -200,7 +204,15 @@ function CampaignDetail() {
         className="mt-8 grid gap-8 border-b border-white/10 pb-10 md:grid-cols-[280px_1fr_auto]"
         style={{ animation: "fade-up 0.6s var(--ease-out-expo) both" }}
       >
-        <div className="campaign-sigil min-h-48 rounded-md border border-white/10 bg-void-blue" aria-hidden="true" />
+        {campaign.banner_url ? (
+          <img
+            src={campaign.banner_url}
+            alt={`Imagem da crônica ${campaign.name}`}
+            className="min-h-48 w-full rounded-md border border-white/10 object-cover"
+          />
+        ) : (
+          <div className="campaign-sigil min-h-48 rounded-md border border-white/10 bg-void-blue" aria-hidden="true" />
+        )}
         <div className="min-w-0 py-2">
           <p className="ritual-eyebrow">
             {isMaster ? "Mestre desta Crônica" : "Portador participante"}
@@ -220,7 +232,14 @@ function CampaignDetail() {
           >
               <Copy className="mr-2 inline size-3.5" />{campaign.invite_code}
           </button>
-          {!isMaster && (
+          {isMaster ? (
+            <button
+              onClick={() => setShowEdit(true)}
+              className="flex items-center gap-2 rounded-md border border-white/15 px-4 py-2 text-[10px] uppercase tracking-widest text-white/70 hover:border-ritual-gold hover:text-ritual-gold"
+            >
+              <Pencil className="size-3" /> Editar Crônica
+            </button>
+          ) : (
             <button
               onClick={leaveCampaign}
               className="text-[10px] uppercase tracking-widest text-corruption/70 hover:text-corruption"
@@ -230,6 +249,18 @@ function CampaignDetail() {
           )}
         </div>
       </header>
+
+      {showEdit && isMaster && (
+        <EditCampaignModal
+          campaign={campaign}
+          onClose={() => setShowEdit(false)}
+          onSaved={() => {
+            setShowEdit(false);
+            load();
+          }}
+        />
+      )}
+
 
       {campaign.description && (
         <section className="mt-8 border-l-2 border-prismatic/50 py-2 pl-6">
@@ -417,5 +448,123 @@ function CampaignDetail() {
         )}
       </section>
     </div>
+  );
+}
+
+function EditCampaignModal({
+  campaign,
+  onClose,
+  onSaved,
+}: {
+  campaign: Campaign;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [name, setName] = useState(campaign.name);
+  const [synopsis, setSynopsis] = useState(campaign.synopsis ?? "");
+  const [description, setDescription] = useState(campaign.description ?? "");
+  const [status, setStatus] = useState(campaign.status);
+  const [banner, setBanner] = useState<string | null>(campaign.banner_url);
+  const [saving, setSaving] = useState(false);
+
+  async function pickImage(file: File | undefined) {
+    if (!file) return;
+    try {
+      setBanner(await prepareCharacterPortrait(file));
+    } catch {
+      toast.error("Não foi possível processar a imagem.");
+    }
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    const { error } = await supabase
+      .from("campaigns")
+      .update({
+        name: name.trim(),
+        synopsis: synopsis.trim() || null,
+        description: description.trim() || null,
+        status: status as "active" | "paused" | "archived",
+        banner_url: banner,
+      })
+      .eq("id", campaign.id);
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Crônica atualizada.");
+    onSaved();
+  }
+
+  return (
+    <ModalShell title="Editar Crônica" onClose={onClose}>
+      <form onSubmit={submit} className="space-y-4">
+        <div className="flex items-center gap-4">
+          {banner ? (
+            <img src={banner} alt="Prévia da imagem da crônica" className="size-20 rounded-md border border-white/10 object-cover" />
+          ) : (
+            <div className="campaign-sigil size-20 rounded-md border border-white/10 bg-void-blue" aria-hidden="true" />
+          )}
+          <div className="space-y-2">
+            <label className="inline-block cursor-pointer rounded-md border border-white/10 px-3 py-2 text-[10px] uppercase tracking-widest text-white/70 hover:border-ritual-gold hover:text-ritual-gold">
+              Trocar imagem
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => pickImage(e.target.files?.[0])}
+              />
+            </label>
+            {banner && (
+              <button
+                type="button"
+                onClick={() => setBanner(null)}
+                className="block text-[10px] uppercase tracking-widest text-corruption/70 hover:text-corruption"
+              >
+                Remover imagem
+              </button>
+            )}
+          </div>
+        </div>
+
+        <Field label="Nome da Crônica" value={name} onChange={setName} required />
+        <Field label="Sinopse (curta)" value={synopsis} onChange={setSynopsis} />
+
+        <div>
+          <label className="ml-1 text-[10px] uppercase tracking-widest text-white/40">
+            Descrição / Introdução
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            className="mt-1.5 w-full rounded-lg border border-white/5 bg-black/40 px-4 py-3 text-sm text-foreground placeholder:text-white/20 focus:border-prismatic/40 focus:outline-none focus:ring-1 focus:ring-prismatic/40"
+          />
+        </div>
+
+        <div>
+          <label className="ml-1 text-[10px] uppercase tracking-widest text-white/40">Status</label>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="mt-1.5 w-full rounded-lg border border-white/5 bg-abyss px-4 py-3 text-sm text-foreground focus:border-prismatic/40 focus:outline-none"
+          >
+            <option value="active">Ativa</option>
+            <option value="paused">Pausada</option>
+            <option value="archived">Arquivada</option>
+          </select>
+        </div>
+
+        <button
+          type="submit"
+          disabled={saving || !name.trim()}
+          className="w-full rounded-md bg-ritual-gold py-3 text-xs uppercase tracking-[0.25em] text-abyss transition-colors hover:bg-ritual-gold/90 disabled:opacity-50"
+        >
+          {saving ? "Selando…" : "Salvar alterações"}
+        </button>
+      </form>
+    </ModalShell>
   );
 }
