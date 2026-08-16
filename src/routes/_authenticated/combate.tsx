@@ -417,10 +417,43 @@ function Combate() {
     `${c.name} ${c.epithet}`.toLowerCase().includes(query.trim().toLowerCase()),
   ).slice(0, 8);
 
+  if (!campaignId) {
+    return (
+      <div className="mx-auto min-h-screen max-w-3xl px-6 py-24">
+        <Link to="/dashboard" className="text-[10px] uppercase tracking-widest text-white/40 hover:text-ritual-gold">
+          ← Portal
+        </Link>
+        <div className="glass-panel mt-8 rounded-2xl p-12 text-center">
+          <p className="ritual-eyebrow">Ritual de Confronto</p>
+          <h1 className="ritual-title mt-3 text-4xl text-foreground">A mesa pertence a uma crônica</h1>
+          <p className="mx-auto mt-3 max-w-md text-sm text-white/50">
+            Cada combate acontece dentro de uma campanha e reúne apenas os Portadores vinculados a ela.
+          </p>
+          {campaigns.length > 0 ? (
+            <select
+              value=""
+              onChange={(event) => navigate({ to: "/combate", search: { campaign: event.target.value } })}
+              className="mt-6 min-w-64 rounded-md border border-white/10 bg-abyss px-3 py-2 text-xs text-foreground focus:border-prismatic focus:outline-none"
+            >
+              <option value="">Escolha uma campanha…</option>
+              {campaigns.map((campaign) => (
+                <option key={campaign.id} value={campaign.id}>{campaign.name}</option>
+              ))}
+            </select>
+          ) : (
+            <Link to="/campaigns" className="mt-6 inline-block rounded-md bg-ritual-gold px-5 py-3 text-xs uppercase tracking-[0.2em] text-abyss">
+              Ver campanhas
+            </Link>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto min-h-screen max-w-7xl px-6 py-16">
-      <Link to="/dashboard" className="text-[10px] uppercase tracking-widest text-white/40 hover:text-ritual-gold">
-        ← Portal
+      <Link to="/campaigns/$id" params={{ id: campaignId }} className="text-[10px] uppercase tracking-widest text-white/40 hover:text-ritual-gold">
+        ← Crônica
       </Link>
 
       <header className="mt-4 mb-10 flex flex-wrap items-end justify-between gap-6">
@@ -428,16 +461,13 @@ function Combate() {
           <p className="ritual-eyebrow">Ritual de Confronto</p>
           <h1 className="ritual-title text-6xl text-foreground">Mesa de Combate</h1>
           <p className="max-w-xl text-sm italic text-white/55">
-            {campaignId
-              ? "Mesa compartilhada em tempo real com todos os participantes da campanha."
-              : "Escolha uma campanha para compartilhar o encontro com o grupo."}
+            Mesa compartilhada em tempo real com todos os participantes da campanha.
           </p>
           <select
-            value={campaignId ?? ""}
-            onChange={(event) => navigate({ to: "/combate", search: event.target.value ? { campaign: event.target.value } : {} })}
+            value={campaignId}
+            onChange={(event) => navigate({ to: "/combate", search: { campaign: event.target.value } })}
             className="mt-3 min-w-64 rounded-md border border-white/10 bg-abyss px-3 py-2 text-xs text-foreground focus:border-prismatic focus:outline-none"
           >
-            <option value="">Mesa pessoal neste dispositivo</option>
             {campaigns.map((campaign) => (
               <option key={campaign.id} value={campaign.id}>{campaign.name} · compartilhada</option>
             ))}
