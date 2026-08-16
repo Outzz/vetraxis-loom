@@ -171,8 +171,13 @@ function AuthPage() {
                 onChange={setPassword}
                 placeholder="••••••••"
                 required
-                minLength={6}
+                minLength={8}
               />
+              {mode === "signup" && (
+                <p className="ml-1 text-[10px] leading-relaxed text-white/30">
+                  Mínimo 8 caracteres, com 1 maiúscula, 1 número e 1 símbolo.
+                </p>
+              )}
 
               <button
                 type="submit"
