@@ -65,6 +65,7 @@ function CampaignDetail() {
   const [pick, setPick] = useState("");
   const [linking, setLinking] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showEdit, setShowEdit] = useState(false);
 
   async function load() {
     const { data: u } = await supabase.auth.getUser();
