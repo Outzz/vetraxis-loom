@@ -56,17 +56,24 @@ function CampaignDetail() {
   const [members, setMembers] = useState<Member[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [myCharacters, setMyCharacters] = useState<Character[]>([]);
+  const [pick, setPick] = useState("");
+  const [linking, setLinking] = useState(false);
   const [loading, setLoading] = useState(true);
 
   async function load() {
     const { data: u } = await supabase.auth.getUser();
     setUserId(u.user?.id ?? null);
 
-    const [{ data: c }, { data: mems }, { data: chars }] = await Promise.all([
+    const [{ data: c }, { data: mems }, { data: chars }, { data: mine }] = await Promise.all([
       supabase.from("campaigns").select("*").eq("id", id).maybeSingle(),
       supabase.from("campaign_members").select("*").eq("campaign_id", id),
       supabase.from("characters").select("*").eq("campaign_id", id),
+      u.user
+        ? supabase.from("characters").select("*").eq("owner_id", u.user.id).order("name")
+        : Promise.resolve({ data: [] as Character[] }),
     ]);
+    setMyCharacters((mine as Character[]) ?? []);
     setCampaign(c as Campaign | null);
     // Fetch profiles for members
     const memList = (mems as Member[]) ?? [];
