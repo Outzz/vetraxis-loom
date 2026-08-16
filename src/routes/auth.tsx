@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { CosmicBackground } from "@/components/CosmicBackground";
 
 const searchSchema = z.object({
@@ -75,7 +74,7 @@ function AuthPage() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -85,7 +84,9 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        toast.success("Ritual iniciado. Verifique seu e-mail para confirmar.");
+        toast.success("Pacto selado. Consciência sincronizada.");
+        if (data.session) goToDestination();
+
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -103,22 +104,8 @@ function AuthPage() {
     }
   }
 
-  async function handleGoogle() {
-    setLoading(true);
-    try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin + (destination ?? "/dashboard"),
-      });
-      if (result.error) throw result.error;
-      if (!result.redirected) {
-        goToDestination();
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro desconhecido";
-      toast.error(message);
-      setLoading(false);
-    }
-  }
+
+
 
 
   return (
@@ -194,15 +181,7 @@ function AuthPage() {
             </div>
 
             <div className="space-y-3">
-              <button
-                type="button"
-                onClick={handleGoogle}
-                disabled={loading}
-                className="flex w-full items-center justify-center gap-3 rounded-md border border-white/10 bg-white/5 py-3 text-xs uppercase tracking-widest text-foreground transition-colors hover:bg-white/10 disabled:opacity-50"
-              >
-                <GoogleGlyph />
-                Sincronizar Google
-              </button>
+
 
               <button
                 type="button"
@@ -257,16 +236,5 @@ function Field(props: {
         className="w-full rounded-lg border border-white/5 bg-black/40 px-4 py-3 text-sm text-foreground placeholder:text-white/20 focus:border-prismatic/40 focus:outline-none focus:ring-1 focus:ring-prismatic/40"
       />
     </div>
-  );
-}
-
-function GoogleGlyph() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden>
-      <path
-        fill="#EA4335"
-        d="M12 10.2v3.9h5.4c-.2 1.4-1.6 4.1-5.4 4.1-3.3 0-5.9-2.7-5.9-6.1s2.6-6.1 5.9-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.9 3.5 14.7 2.5 12 2.5 6.8 2.5 2.6 6.7 2.6 12S6.8 21.5 12 21.5c6.9 0 11.5-4.8 11.5-11.6 0-.8-.1-1.4-.2-2z"
-      />
-    </svg>
   );
 }
