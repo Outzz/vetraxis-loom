@@ -103,26 +103,8 @@ function Dashboard() {
       to: "/bestiario",
       meta: "15 anomalias",
       glyph: <div className="size-1.5 rounded-full bg-prismatic" />,
-    },
-    {
-      key: "combate",
-      title: "Combate",
-      desc: "",
-      size: "square",
-      to: "/combate",
-      meta: "Mesa ritual",
-      glyph: <div className="size-3 rounded-full ring-1 ring-white/50" />,
-    },
-    {
-      key: "chat",
-      title: "Chat Ritual",
-      desc: "",
-      size: "square",
-      disabled: true,
-      meta: "Fase 4",
-      glyph: <div className="size-1 animate-pulse bg-white" />,
-    },
   ];
+
 
   const avatarInitial = displayName.charAt(0).toUpperCase();
 
