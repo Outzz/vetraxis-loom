@@ -204,7 +204,15 @@ function CampaignDetail() {
         className="mt-8 grid gap-8 border-b border-white/10 pb-10 md:grid-cols-[280px_1fr_auto]"
         style={{ animation: "fade-up 0.6s var(--ease-out-expo) both" }}
       >
-        <div className="campaign-sigil min-h-48 rounded-md border border-white/10 bg-void-blue" aria-hidden="true" />
+        {campaign.banner_url ? (
+          <img
+            src={campaign.banner_url}
+            alt={`Imagem da crônica ${campaign.name}`}
+            className="min-h-48 w-full rounded-md border border-white/10 object-cover"
+          />
+        ) : (
+          <div className="campaign-sigil min-h-48 rounded-md border border-white/10 bg-void-blue" aria-hidden="true" />
+        )}
         <div className="min-w-0 py-2">
           <p className="ritual-eyebrow">
             {isMaster ? "Mestre desta Crônica" : "Portador participante"}
@@ -224,7 +232,14 @@ function CampaignDetail() {
           >
               <Copy className="mr-2 inline size-3.5" />{campaign.invite_code}
           </button>
-          {!isMaster && (
+          {isMaster ? (
+            <button
+              onClick={() => setShowEdit(true)}
+              className="flex items-center gap-2 rounded-md border border-white/15 px-4 py-2 text-[10px] uppercase tracking-widest text-white/70 hover:border-ritual-gold hover:text-ritual-gold"
+            >
+              <Pencil className="size-3" /> Editar Crônica
+            </button>
+          ) : (
             <button
               onClick={leaveCampaign}
               className="text-[10px] uppercase tracking-widest text-corruption/70 hover:text-corruption"
@@ -234,6 +249,18 @@ function CampaignDetail() {
           )}
         </div>
       </header>
+
+      {showEdit && isMaster && (
+        <EditCampaignModal
+          campaign={campaign}
+          onClose={() => setShowEdit(false)}
+          onSaved={() => {
+            setShowEdit(false);
+            load();
+          }}
+        />
+      )}
+
 
       {campaign.description && (
         <section className="mt-8 border-l-2 border-prismatic/50 py-2 pl-6">
