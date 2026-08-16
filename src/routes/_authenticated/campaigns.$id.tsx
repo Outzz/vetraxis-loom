@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { BookOpen, Copy, Plus, Swords, UserRoundPlus } from "lucide-react";
+import { BookOpen, Copy, Pencil, Plus, Swords, UserRoundPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { prepareCharacterPortrait } from "@/lib/character-image";
 import { ELEMENTS, type CosmicElement } from "@/lib/game-data";
+import { Field, ModalShell } from "./campaigns.index";
 
 export const Route = createFileRoute("/_authenticated/campaigns/$id")({
   head: () => ({
@@ -26,6 +28,7 @@ type Campaign = {
   invite_code: string;
   status: string;
   master_id: string;
+  banner_url: string | null;
 };
 
 type Member = {
