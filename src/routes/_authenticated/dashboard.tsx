@@ -103,7 +103,9 @@ function Dashboard() {
       to: "/bestiario",
       meta: "15 anomalias",
       glyph: <div className="size-1.5 rounded-full bg-prismatic" />,
+    },
   ];
+
 
 
   const avatarInitial = displayName.charAt(0).toUpperCase();
