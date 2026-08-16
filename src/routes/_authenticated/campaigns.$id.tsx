@@ -47,6 +47,8 @@ type Character = {
   sanity_max: number;
   corruption: number;
   owner_id: string;
+  campaign_id: string | null;
+  portrait_url?: string | null;
 };
 
 function CampaignDetail() {
@@ -56,17 +58,24 @@ function CampaignDetail() {
   const [members, setMembers] = useState<Member[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [myCharacters, setMyCharacters] = useState<Character[]>([]);
+  const [pick, setPick] = useState("");
+  const [linking, setLinking] = useState(false);
   const [loading, setLoading] = useState(true);
 
   async function load() {
     const { data: u } = await supabase.auth.getUser();
     setUserId(u.user?.id ?? null);
 
-    const [{ data: c }, { data: mems }, { data: chars }] = await Promise.all([
+    const [{ data: c }, { data: mems }, { data: chars }, { data: mine }] = await Promise.all([
       supabase.from("campaigns").select("*").eq("id", id).maybeSingle(),
       supabase.from("campaign_members").select("*").eq("campaign_id", id),
       supabase.from("characters").select("*").eq("campaign_id", id),
+      u.user
+        ? supabase.from("characters").select("*").eq("owner_id", u.user.id).order("name")
+        : Promise.resolve({ data: [] as Character[] }),
     ]);
+    setMyCharacters((mine as Character[]) ?? []);
     setCampaign(c as Campaign | null);
     // Fetch profiles for members
     const memList = (mems as Member[]) ?? [];
@@ -144,6 +153,34 @@ function CampaignDetail() {
     }
   }
 
+  async function linkCharacter() {
+    if (!pick) return;
+    setLinking(true);
+    const { error } = await supabase
+      .from("characters")
+      .update({ campaign_id: id })
+      .eq("id", pick);
+    setLinking(false);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Portador enviado para a crônica.");
+      setPick("");
+      load();
+    }
+  }
+
+  async function unlinkCharacter(characterId: string) {
+    const { error } = await supabase
+      .from("characters")
+      .update({ campaign_id: null })
+      .eq("id", characterId);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Portador removido da crônica.");
+      load();
+    }
+  }
+
   return (
     <div className="mx-auto min-h-screen max-w-6xl px-6 py-16">
       <Link
@@ -154,7 +191,7 @@ function CampaignDetail() {
       </Link>
 
       <div className="mt-8 flex flex-wrap gap-2 border-b border-white/10 pb-6">
-        <Link to="/characters/new" search={{ campaign: campaign.id }} className="flex items-center gap-2 rounded-md bg-prismatic px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-prismatic/80"><UserRoundPlus className="size-4" />Criar Portador</Link>
+        <Link to="/characters/new" className="flex items-center gap-2 rounded-md bg-prismatic px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-prismatic/80"><UserRoundPlus className="size-4" />Criar Portador</Link>
         <Link to="/combate" search={{ campaign: campaign.id }} className="flex items-center gap-2 rounded-md border border-prismatic/50 px-4 py-2.5 text-xs text-foreground hover:bg-prismatic/10"><Swords className="size-4" />Abrir Mesa</Link>
         <Link to="/bestiario" search={{ campaign: campaign.id }} className="flex items-center gap-2 rounded-md border border-white/10 px-4 py-2.5 text-xs text-white/65 hover:border-white/30 hover:text-foreground"><BookOpen className="size-4" />Bestiário</Link>
       </div>
@@ -277,12 +314,66 @@ function CampaignDetail() {
         </div>
       </section>
 
+      <section className="mt-10 glass-panel rounded-2xl p-6">
+        <p className="ritual-eyebrow">Jogadores · Meus Portadores</p>
+        <p className="mt-2 text-xs text-white/45">
+          Escolha qual dos seus Portadores entra nesta crônica. Um Portador só pode estar
+          em uma crônica por vez.
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <select
+            value={pick}
+            onChange={(e) => setPick(e.target.value)}
+            className="min-w-56 rounded-lg border border-white/10 bg-abyss px-4 py-2.5 text-sm text-foreground focus:border-prismatic/40 focus:outline-none"
+          >
+            <option value="">Selecionar Portador…</option>
+            {myCharacters
+              .filter((c) => c.campaign_id !== id)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} · Nv {c.level}
+                  {c.campaign_id ? " (em outra crônica)" : ""}
+                </option>
+              ))}
+          </select>
+          <button
+            onClick={linkCharacter}
+            disabled={!pick || linking}
+            className="rounded-md bg-ritual-gold px-4 py-2.5 text-[10px] uppercase tracking-widest text-abyss hover:bg-ritual-gold/90 disabled:opacity-40"
+          >
+            {linking ? "Vinculando…" : "Entrar com este Portador"}
+          </button>
+          <Link
+            to="/characters/new"
+            className="rounded-md border border-white/10 px-4 py-2.5 text-[10px] uppercase tracking-widest text-white/60 hover:border-ritual-gold hover:text-ritual-gold"
+          >
+            <Plus className="mr-1 inline size-3" /> Criar novo
+          </Link>
+        </div>
+        {myCharacters.some((c) => c.campaign_id === id) && (
+          <ul className="mt-5 space-y-2 border-t border-white/5 pt-4">
+            {myCharacters
+              .filter((c) => c.campaign_id === id)
+              .map((c) => (
+                <li key={c.id} className="flex items-center justify-between text-sm text-white/70">
+                  <span>{c.name}</span>
+                  <button
+                    onClick={() => unlinkCharacter(c.id)}
+                    className="text-[10px] uppercase tracking-widest text-corruption/70 hover:text-corruption"
+                  >
+                    Retirar da crônica
+                  </button>
+                </li>
+              ))}
+          </ul>
+        )}
+      </section>
+
       <section className="mt-12">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="ritual-title text-2xl text-foreground">Personagens ativos</h2>
           <Link
             to="/characters/new"
-            search={{ campaign: campaign.id }}
             className="rounded-md border border-ritual-gold/40 px-4 py-2 text-[10px] uppercase tracking-widest text-ritual-gold hover:bg-ritual-gold/10"
           >
             <Plus className="mr-1 inline size-3" /> Novo Portador

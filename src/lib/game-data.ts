@@ -858,6 +858,7 @@ export const SKILLS: { key: string; name: string; attr: AttributeKey }[] = [
   { key: "ritualismo", name: "Ritualismo", attr: "int" },
   { key: "persuasao", name: "Persuasão", attr: "cha" },
   { key: "vontade", name: "Resistência/Vontade", attr: "res" },
+  { key: "iniciativa", name: "Iniciativa", attr: "dex" },
 ];
 
 export const DIFFICULTIES = [

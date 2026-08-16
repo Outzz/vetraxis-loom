@@ -51,6 +51,7 @@ export type Creature = {
   attacks: { name: string; roll: string; damage: string; note?: string }[];
   traits: { name: string; description: string }[];
   lore: string;
+  image?: string | null;
 };
 
 export const CREATURES: Creature[] = [

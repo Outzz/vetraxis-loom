@@ -239,6 +239,30 @@ export type Database = {
           },
         ]
       }
+      custom_creatures: {
+        Row: {
+          created_at: string
+          created_by: string
+          data: Json
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          data: Json
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          data?: Json
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -299,6 +323,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_anomaly_admin: { Args: never; Returns: boolean }
       is_campaign_master: {
         Args: { _campaign_id: string; _user_id: string }
         Returns: boolean

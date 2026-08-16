@@ -1,7 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
+import { toast } from "sonner";
 import { queueCreature } from "@/lib/combat";
+import { prepareCharacterPortrait } from "@/lib/character-image";
 import {
   BEHAVIORS,
   CREATURES,
@@ -10,6 +12,13 @@ import {
   type Creature,
   type ThreatLevel,
 } from "@/lib/bestiary";
+import {
+  deleteCreature,
+  isAnomalyAdmin,
+  loadCreatures,
+  saveCreature,
+  slugify,
+} from "@/lib/creatures-store";
 import { ELEMENTS, type CosmicElement } from "@/lib/game-data";
 
 export const Route = createFileRoute("/_authenticated/bestiario")({
@@ -37,30 +46,68 @@ export const Route = createFileRoute("/_authenticated/bestiario")({
 
 type Filter<T> = T | "all";
 
+const BLANK: Creature = {
+  id: "",
+  name: "",
+  epithet: "",
+  threat: Object.keys(THREATS)[0] as ThreatLevel,
+  element: Object.keys(ELEMENTS)[0] as CosmicElement,
+  behavior: Object.keys(BEHAVIORS)[0] as Behavior,
+  hp: 20,
+  ca: 12,
+  initiative: "1d20+2",
+  sanityDC: 12,
+  corruption: 1,
+  attacks: [{ name: "Ataque", roll: "+4", damage: "1d6+2", note: "" }],
+  traits: [],
+  lore: "",
+  image: null,
+};
+
 function Bestiario() {
   const { campaign } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [threat, setThreat] = useState<Filter<ThreatLevel>>("all");
   const [element, setElement] = useState<Filter<CosmicElement>>("all");
   const [behavior, setBehavior] = useState<Filter<Behavior>>("all");
-  const [selected, setSelected] = useState<Creature | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [creatures, setCreatures] = useState<Creature[]>(CREATURES);
+  const [admin, setAdmin] = useState(false);
+  const [draft, setDraft] = useState<Creature | null>(null);
+
+  async function refresh() {
+    setCreatures(await loadCreatures());
+  }
+
+  useEffect(() => {
+    refresh();
+    isAnomalyAdmin().then(setAdmin);
+  }, []);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return CREATURES.filter((c) => {
+    return creatures.filter((c) => {
       if (threat !== "all" && c.threat !== threat) return false;
       if (element !== "all" && c.element !== element) return false;
       if (behavior !== "all" && c.behavior !== behavior) return false;
-      if (
-        q &&
-        !`${c.name} ${c.epithet} ${c.lore}`.toLowerCase().includes(q)
-      )
-        return false;
+      if (q && !`${c.name} ${c.epithet} ${c.lore}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [query, threat, element, behavior]);
+  }, [creatures, query, threat, element, behavior]);
 
-  const active = selected && results.includes(selected) ? selected : null;
+  const active = results.find((c) => c.id === selectedId) ?? null;
+
+  async function remove(c: Creature) {
+    if (!confirm(`Apagar a anomalia "${c.name}"?`)) return;
+    try {
+      await deleteCreature(c.id);
+      toast.success("Anomalia apagada.");
+      setSelectedId(null);
+      refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível apagar.");
+    }
+  }
 
   return (
     <div className="mx-auto min-h-screen max-w-7xl px-6 py-16">
@@ -72,15 +119,25 @@ function Bestiario() {
       </Link>
 
       <header
-        className="mt-4 mb-10 space-y-3"
+        className="mt-4 mb-10 flex flex-wrap items-end justify-between gap-6"
         style={{ animation: "fade-up 0.6s var(--ease-out-expo) both" }}
       >
-        <p className="ritual-eyebrow">Catálogo de Anomalias</p>
-        <h1 className="ritual-title text-6xl text-foreground">Bestiário</h1>
-        <p className="max-w-2xl text-sm italic text-white/60">
-          "Nomear uma anomalia não a torna menos real — apenas mais fácil de
-          temer com precisão." — Arquivo de Campo, Vetraxis
-        </p>
+        <div className="space-y-3">
+          <p className="ritual-eyebrow">Catálogo de Anomalias</p>
+          <h1 className="ritual-title text-6xl text-foreground">Bestiário</h1>
+          <p className="max-w-2xl text-sm italic text-white/60">
+            "Nomear uma anomalia não a torna menos real — apenas mais fácil de temer com
+            precisão." — Arquivo de Campo, Vetraxis
+          </p>
+        </div>
+        {admin && (
+          <button
+            onClick={() => setDraft({ ...BLANK })}
+            className="rounded-md bg-ritual-gold px-5 py-3 text-[10px] uppercase tracking-widest text-abyss hover:bg-ritual-gold/90"
+          >
+            + Nova Anomalia
+          </button>
+        )}
       </header>
 
       {/* Filtros */}
@@ -140,7 +197,7 @@ function Bestiario() {
         </FilterRow>
 
         <p className="font-mono text-[10px] uppercase tracking-widest text-white/35">
-          {results.length} de {CREATURES.length} criaturas catalogadas
+          {results.length} de {creatures.length} criaturas catalogadas
         </p>
       </div>
 
@@ -152,20 +209,25 @@ function Bestiario() {
               creature={c}
               index={i}
               selected={active?.id === c.id}
-              onSelect={() => setSelected(active?.id === c.id ? null : c)}
+              onSelect={() => setSelectedId(active?.id === c.id ? null : c.id)}
             />
           ))}
           {results.length === 0 && (
             <p className="col-span-full rounded-2xl border border-dashed border-white/10 p-10 text-center text-sm text-white/40">
-              Nenhuma anomalia corresponde a esses parâmetros. O vazio permanece
-              silencioso.
+              Nenhuma anomalia corresponde a esses parâmetros. O vazio permanece silencioso.
             </p>
           )}
         </div>
 
         <aside className="lg:sticky lg:top-8 lg:self-start">
           {active ? (
-              <CreatureDetail creature={active} campaignId={campaign} />
+            <CreatureDetail
+              creature={active}
+              campaignId={campaign}
+              admin={admin}
+              onEdit={() => setDraft({ ...active })}
+              onDelete={() => remove(active)}
+            />
           ) : (
             <div className="glass-panel rounded-2xl p-8 text-center text-sm text-white/40">
               Selecione uma criatura para consultar a ficha completa.
@@ -173,17 +235,24 @@ function Bestiario() {
           )}
         </aside>
       </div>
+
+      {draft && (
+        <CreatureEditor
+          draft={draft}
+          setDraft={setDraft}
+          onClose={() => setDraft(null)}
+          onSaved={(id) => {
+            setDraft(null);
+            setSelectedId(id);
+            refresh();
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function FilterRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
       <p className="text-[10px] uppercase tracking-widest text-white/35">{label}</p>
@@ -250,14 +319,20 @@ function CreatureCard({
         animationDelay: `${Math.min(index, 12) * 45}ms`,
       }}
     >
-      <span
-        className="absolute inset-y-0 left-0 w-1"
-        style={{ backgroundColor: th.color }}
-      />
+      <span className="absolute inset-y-0 left-0 w-1" style={{ backgroundColor: th.color }} />
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="ritual-title text-2xl text-foreground">{c.name}</h3>
-          <p className="text-xs italic text-white/45">{c.epithet}</p>
+        <div className="flex min-w-0 items-center gap-3">
+          {c.image && (
+            <img
+              src={c.image}
+              alt={c.name}
+              className="size-14 shrink-0 rounded-lg border border-white/10 object-cover"
+            />
+          )}
+          <div className="min-w-0">
+            <h3 className="ritual-title truncate text-2xl text-foreground">{c.name}</h3>
+            <p className="truncate text-xs italic text-white/45">{c.epithet}</p>
+          </div>
         </div>
         <span
           className="shrink-0 rounded-full px-2 py-1 text-[9px] uppercase tracking-widest"
@@ -298,7 +373,19 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function CreatureDetail({ creature: c, campaignId }: { creature: Creature; campaignId?: string }) {
+function CreatureDetail({
+  creature: c,
+  campaignId,
+  admin,
+  onEdit,
+  onDelete,
+}: {
+  creature: Creature;
+  campaignId?: string;
+  admin: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
   const navigate = useNavigate();
   const el = ELEMENTS[c.element];
   const th = THREATS[c.threat];
@@ -307,6 +394,13 @@ function CreatureDetail({ creature: c, campaignId }: { creature: Creature; campa
       className="glass-panel space-y-6 rounded-2xl p-6"
       style={{ animation: "fade-up 0.4s var(--ease-out-expo) both" }}
     >
+      {c.image && (
+        <img
+          src={c.image}
+          alt={c.name}
+          className="h-48 w-full rounded-xl border border-white/10 object-cover"
+        />
+      )}
       <header className="space-y-1">
         <p className="ritual-eyebrow">Ficha de Anomalia</p>
         <h2 className="ritual-title text-3xl text-foreground">{c.name}</h2>
@@ -364,12 +458,345 @@ function CreatureDetail({ creature: c, campaignId }: { creature: Creature; campa
       <button
         onClick={() => {
           queueCreature(c.id);
-           navigate({ to: "/combate", search: campaignId ? { campaign: campaignId } : {} });
+          navigate({ to: "/combate", search: campaignId ? { campaign: campaignId } : {} });
         }}
         className="w-full rounded-md bg-ritual-gold py-3 text-xs uppercase tracking-[0.2em] text-abyss transition-colors hover:bg-ritual-gold/90"
       >
         Enviar para Combate
       </button>
+
+      {admin && (
+        <div className="flex gap-2">
+          <button
+            onClick={onEdit}
+            className="flex-1 rounded-md border border-prismatic/40 py-2.5 text-[10px] uppercase tracking-widest text-prismatic hover:bg-prismatic/10"
+          >
+            Editar anomalia
+          </button>
+          <button
+            onClick={onDelete}
+            className="rounded-md border border-corruption/40 px-4 py-2.5 text-[10px] uppercase tracking-widest text-corruption hover:bg-corruption/10"
+          >
+            Apagar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CreatureEditor({
+  draft,
+  setDraft,
+  onClose,
+  onSaved,
+}: {
+  draft: Creature;
+  setDraft: (c: Creature) => void;
+  onClose: () => void;
+  onSaved: (id: string) => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  function set<K extends keyof Creature>(key: K, value: Creature[K]) {
+    setDraft({ ...draft, [key]: value });
+  }
+
+  async function save() {
+    if (!draft.name.trim()) {
+      toast.error("A anomalia precisa de um nome.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const id = draft.id || slugify(draft.name);
+      await saveCreature({ ...draft, id, name: draft.name.trim() });
+      toast.success("Anomalia registrada no Bestiário.");
+      onSaved(id);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível salvar.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-6 backdrop-blur-sm">
+      <div className="glass-panel my-8 w-full max-w-3xl space-y-6 rounded-2xl p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="ritual-eyebrow">Escudo do Mestre</p>
+            <h2 className="ritual-title text-3xl text-foreground">
+              {draft.id ? "Editar anomalia" : "Nova anomalia"}
+            </h2>
+          </div>
+          <button onClick={onClose} className="text-white/40 hover:text-corruption">
+            ✕
+          </button>
+        </div>
+
+        <div className="flex items-center gap-4 rounded-lg border border-white/5 bg-black/30 p-3">
+          <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/10 bg-abyss text-2xl text-white/25">
+            {draft.image ? (
+              <img src={draft.image} alt="Prévia" className="h-full w-full object-cover" />
+            ) : (
+              "◇"
+            )}
+          </div>
+          <div className="space-y-2">
+            <label className="inline-flex cursor-pointer rounded-md border border-white/10 px-3 py-2 text-[10px] uppercase tracking-widest text-white/65 hover:border-ritual-gold hover:text-ritual-gold">
+              {uploading ? "Preparando…" : "Escolher imagem"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={uploading}
+                className="sr-only"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setUploading(true);
+                  try {
+                    set("image", await prepareCharacterPortrait(file));
+                  } catch (err) {
+                    toast.error(err instanceof Error ? err.message : "Imagem inválida.");
+                  } finally {
+                    setUploading(false);
+                  }
+                }}
+              />
+            </label>
+            {draft.image && (
+              <button
+                onClick={() => set("image", null)}
+                className="block text-[10px] uppercase tracking-widest text-corruption/70 hover:text-corruption"
+              >
+                Remover imagem
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <Text label="Nome" value={draft.name} onChange={(v) => set("name", v)} />
+          <Text label="Epíteto" value={draft.epithet} onChange={(v) => set("epithet", v)} />
+          <Select
+            label="Ameaça"
+            value={draft.threat}
+            options={(Object.keys(THREATS) as ThreatLevel[]).map((k) => [k, THREATS[k].name])}
+            onChange={(v) => set("threat", v as ThreatLevel)}
+          />
+          <Select
+            label="Elemento"
+            value={draft.element}
+            options={(Object.keys(ELEMENTS) as CosmicElement[]).map((k) => [k, ELEMENTS[k].name])}
+            onChange={(v) => set("element", v as CosmicElement)}
+          />
+          <Select
+            label="Comportamento"
+            value={draft.behavior}
+            options={(Object.keys(BEHAVIORS) as Behavior[]).map((k) => [k, BEHAVIORS[k].name])}
+            onChange={(v) => set("behavior", v as Behavior)}
+          />
+          <Text
+            label="Iniciativa (fórmula)"
+            value={draft.initiative}
+            onChange={(v) => set("initiative", v)}
+          />
+          <Num label="PV" value={draft.hp} onChange={(v) => set("hp", v)} />
+          <Num label="CA" value={draft.ca} onChange={(v) => set("ca", v)} />
+          <Num label="Sanidade CD" value={draft.sanityDC} onChange={(v) => set("sanityDC", v)} />
+          <Num label="Corrupção" value={draft.corruption} onChange={(v) => set("corruption", v)} />
+        </div>
+
+        <div>
+          <p className="ml-1 text-[10px] uppercase tracking-widest text-white/40">Lenda</p>
+          <textarea
+            value={draft.lore}
+            onChange={(e) => set("lore", e.target.value)}
+            rows={3}
+            className="mt-1.5 w-full rounded-lg border border-white/5 bg-black/40 px-4 py-3 text-sm text-foreground focus:border-prismatic/40 focus:outline-none"
+          />
+        </div>
+
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="ritual-eyebrow">Ataques</p>
+            <button
+              onClick={() =>
+                set("attacks", [...draft.attacks, { name: "", roll: "+0", damage: "1d6" }])
+              }
+              className="text-[10px] uppercase tracking-widest text-ritual-gold hover:underline"
+            >
+              + Adicionar
+            </button>
+          </div>
+          {draft.attacks.map((a, i) => (
+            <div key={i} className="grid gap-2 rounded-lg border border-white/5 p-3 md:grid-cols-4">
+              <Text
+                label="Nome"
+                value={a.name}
+                onChange={(v) =>
+                  set("attacks", draft.attacks.map((x, j) => (j === i ? { ...x, name: v } : x)))
+                }
+              />
+              <Text
+                label="Rolagem"
+                value={a.roll}
+                onChange={(v) =>
+                  set("attacks", draft.attacks.map((x, j) => (j === i ? { ...x, roll: v } : x)))
+                }
+              />
+              <Text
+                label="Dano"
+                value={a.damage}
+                onChange={(v) =>
+                  set("attacks", draft.attacks.map((x, j) => (j === i ? { ...x, damage: v } : x)))
+                }
+              />
+              <div className="flex items-end gap-2">
+                <Text
+                  label="Nota"
+                  value={a.note ?? ""}
+                  onChange={(v) =>
+                    set("attacks", draft.attacks.map((x, j) => (j === i ? { ...x, note: v } : x)))
+                  }
+                />
+                <button
+                  onClick={() => set("attacks", draft.attacks.filter((_, j) => j !== i))}
+                  className="mb-2 text-white/30 hover:text-corruption"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="ritual-eyebrow">Traços / Habilidades</p>
+            <button
+              onClick={() => set("traits", [...draft.traits, { name: "", description: "" }])}
+              className="text-[10px] uppercase tracking-widest text-ritual-gold hover:underline"
+            >
+              + Adicionar
+            </button>
+          </div>
+          {draft.traits.map((t, i) => (
+            <div key={i} className="grid gap-2 rounded-lg border border-white/5 p-3 md:grid-cols-[1fr_2fr_auto]">
+              <Text
+                label="Nome"
+                value={t.name}
+                onChange={(v) =>
+                  set("traits", draft.traits.map((x, j) => (j === i ? { ...x, name: v } : x)))
+                }
+              />
+              <Text
+                label="Descrição"
+                value={t.description}
+                onChange={(v) =>
+                  set("traits", draft.traits.map((x, j) => (j === i ? { ...x, description: v } : x)))
+                }
+              />
+              <button
+                onClick={() => set("traits", draft.traits.filter((_, j) => j !== i))}
+                className="mb-2 self-end text-white/30 hover:text-corruption"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </section>
+
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="rounded-md border border-white/10 px-5 py-2.5 text-[10px] uppercase tracking-widest text-white/60 hover:bg-white/5"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={save}
+            disabled={saving || uploading}
+            className="rounded-md bg-ritual-gold px-5 py-2.5 text-[10px] uppercase tracking-widest text-abyss hover:bg-ritual-gold/90 disabled:opacity-50"
+          >
+            {saving ? "Selando…" : "Salvar anomalia"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Text({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="ml-1 text-[10px] uppercase tracking-widest text-white/40">{label}</p>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1.5 w-full rounded-lg border border-white/5 bg-black/40 px-3 py-2 text-sm text-foreground focus:border-prismatic/40 focus:outline-none"
+      />
+    </div>
+  );
+}
+
+function Num({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div>
+      <p className="ml-1 text-[10px] uppercase tracking-widest text-white/40">{label}</p>
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value) || 0)}
+        className="mt-1.5 w-full rounded-lg border border-white/5 bg-black/40 px-3 py-2 text-sm text-foreground focus:border-prismatic/40 focus:outline-none"
+      />
+    </div>
+  );
+}
+
+function Select({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: [string, string][];
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <p className="ml-1 text-[10px] uppercase tracking-widest text-white/40">{label}</p>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1.5 w-full rounded-lg border border-white/5 bg-abyss px-3 py-2 text-sm text-foreground focus:border-prismatic/40 focus:outline-none"
+      >
+        {options.map(([k, name]) => (
+          <option key={k} value={k}>
+            {name}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
