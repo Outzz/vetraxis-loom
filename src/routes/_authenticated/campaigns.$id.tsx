@@ -450,3 +450,121 @@ function CampaignDetail() {
     </div>
   );
 }
+
+function EditCampaignModal({
+  campaign,
+  onClose,
+  onSaved,
+}: {
+  campaign: Campaign;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [name, setName] = useState(campaign.name);
+  const [synopsis, setSynopsis] = useState(campaign.synopsis ?? "");
+  const [description, setDescription] = useState(campaign.description ?? "");
+  const [status, setStatus] = useState(campaign.status);
+  const [banner, setBanner] = useState<string | null>(campaign.banner_url);
+  const [saving, setSaving] = useState(false);
+
+  async function pickImage(file: File | undefined) {
+    if (!file) return;
+    try {
+      setBanner(await prepareCharacterPortrait(file));
+    } catch {
+      toast.error("Não foi possível processar a imagem.");
+    }
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    const { error } = await supabase
+      .from("campaigns")
+      .update({
+        name: name.trim(),
+        synopsis: synopsis.trim() || null,
+        description: description.trim() || null,
+        status: status as "active" | "paused" | "archived",
+        banner_url: banner,
+      })
+      .eq("id", campaign.id);
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Crônica atualizada.");
+    onSaved();
+  }
+
+  return (
+    <ModalShell title="Editar Crônica" onClose={onClose}>
+      <form onSubmit={submit} className="space-y-4">
+        <div className="flex items-center gap-4">
+          {banner ? (
+            <img src={banner} alt="Prévia da imagem da crônica" className="size-20 rounded-md border border-white/10 object-cover" />
+          ) : (
+            <div className="campaign-sigil size-20 rounded-md border border-white/10 bg-void-blue" aria-hidden="true" />
+          )}
+          <div className="space-y-2">
+            <label className="inline-block cursor-pointer rounded-md border border-white/10 px-3 py-2 text-[10px] uppercase tracking-widest text-white/70 hover:border-ritual-gold hover:text-ritual-gold">
+              Trocar imagem
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => pickImage(e.target.files?.[0])}
+              />
+            </label>
+            {banner && (
+              <button
+                type="button"
+                onClick={() => setBanner(null)}
+                className="block text-[10px] uppercase tracking-widest text-corruption/70 hover:text-corruption"
+              >
+                Remover imagem
+              </button>
+            )}
+          </div>
+        </div>
+
+        <Field label="Nome da Crônica" value={name} onChange={setName} required />
+        <Field label="Sinopse (curta)" value={synopsis} onChange={setSynopsis} />
+
+        <div>
+          <label className="ml-1 text-[10px] uppercase tracking-widest text-white/40">
+            Descrição / Introdução
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            className="mt-1.5 w-full rounded-lg border border-white/5 bg-black/40 px-4 py-3 text-sm text-foreground placeholder:text-white/20 focus:border-prismatic/40 focus:outline-none focus:ring-1 focus:ring-prismatic/40"
+          />
+        </div>
+
+        <div>
+          <label className="ml-1 text-[10px] uppercase tracking-widest text-white/40">Status</label>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="mt-1.5 w-full rounded-lg border border-white/5 bg-abyss px-4 py-3 text-sm text-foreground focus:border-prismatic/40 focus:outline-none"
+          >
+            <option value="active">Ativa</option>
+            <option value="paused">Pausada</option>
+            <option value="archived">Arquivada</option>
+          </select>
+        </div>
+
+        <button
+          type="submit"
+          disabled={saving || !name.trim()}
+          className="w-full rounded-md bg-ritual-gold py-3 text-xs uppercase tracking-[0.25em] text-abyss transition-colors hover:bg-ritual-gold/90 disabled:opacity-50"
+        >
+          {saving ? "Selando…" : "Salvar alterações"}
+        </button>
+      </form>
+    </ModalShell>
+  );
+}
