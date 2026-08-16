@@ -69,11 +69,26 @@ function AuthPage() {
     });
   }, [navigate, destination]);
 
+  function validatePassword(value: string) {
+    const hasUpper = /[A-Z]/.test(value);
+    const hasNumber = /\d/.test(value);
+    const hasSymbol = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value);
+    const minLength = value.length >= 8;
+    return { valid: hasUpper && hasNumber && hasSymbol && minLength, hasUpper, hasNumber, hasSymbol, minLength };
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
       if (mode === "signup") {
+        const validation = validatePassword(password);
+        if (!validation.valid) {
+          toast.error(
+            "A Chave Ritual precisa de no mínimo 8 caracteres, incluindo uma letra maiúscula, um número e um símbolo."
+          );
+          return;
+        }
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
