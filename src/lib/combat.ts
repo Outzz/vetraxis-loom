@@ -17,6 +17,7 @@ export interface Combatant {
   sourceId: string;
   name: string;
   subtitle?: string;
+  portrait?: string | null;
   element?: CosmicElement;
   color?: string;
   hpMax: number;
@@ -139,6 +140,7 @@ export function combatantFromCreature(c: Creature, elementColor?: string): Comba
     sourceId: c.id,
     name: c.name,
     subtitle: c.epithet,
+    portrait: c.image ?? null,
     element: c.element,
     color: elementColor,
     hpMax: c.hp,
@@ -169,6 +171,7 @@ export interface CharacterLike {
   pa_max: number;
   corruption?: number;
   dex_score: number;
+  portrait_url?: string | null;
 }
 
 export function modifier(score: number) {
@@ -188,6 +191,7 @@ export function combatantFromCharacter(
     sourceId: ch.id,
     name: ch.name,
     subtitle: ch.concept ?? "Portador",
+    portrait: ch.portrait_url ?? null,
     element: ch.element ?? undefined,
     color: elementColor,
     hpMax: ch.hp_max,
