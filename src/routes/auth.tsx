@@ -74,7 +74,7 @@ function AuthPage() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -84,7 +84,9 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        toast.success("Ritual iniciado. Verifique seu e-mail para confirmar.");
+        toast.success("Pacto selado. Consciência sincronizada.");
+        if (data.session) goToDestination();
+
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
