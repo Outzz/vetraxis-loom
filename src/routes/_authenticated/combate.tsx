@@ -3,7 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { CREATURES, THREATS } from "@/lib/bestiary";
+import { CREATURES, THREATS, type Creature } from "@/lib/bestiary";
+import { loadCreatures } from "@/lib/creatures-store";
 import { ELEMENTS } from "@/lib/game-data";
 import {
   EMPTY_ENCOUNTER,
@@ -57,6 +58,7 @@ function Combate() {
   const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [creatures, setCreatures] = useState<Creature[]>(CREATURES);
   const [hydrated, setHydrated] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const syncedRef = useRef<Record<string, string>>({});
@@ -79,6 +81,10 @@ function Combate() {
       if (!active) return;
       setCampaigns(availableCampaigns ?? []);
 
+      const bestiary = await loadCreatures();
+      if (!active) return;
+      setCreatures(bestiary);
+
       let loaded = loadEncounter();
       if (campaignId) {
         const { data, error } = await supabase
@@ -93,7 +99,7 @@ function Combate() {
     const queued = drainQueue();
     if (queued.length) {
       const added = queued
-        .map((id) => CREATURES.find((c) => c.id === id))
+        .map((id) => bestiary.find((c) => c.id === id))
         .filter(Boolean)
         .map((c) => combatantFromCreature(c!, elColor(c!.element)));
       loaded.combatants = [...loaded.combatants, ...added];
@@ -112,7 +118,7 @@ function Combate() {
       let charactersQuery = supabase
       .from("characters")
       .select(
-        "id,name,concept,element,hp_current,hp_max,sanity_current,sanity_max,pa_current,pa_max,corruption,dex_score",
+        "id,name,concept,element,portrait_url,hp_current,hp_max,sanity_current,sanity_max,pa_current,pa_max,corruption,dex_score",
       )
       .order("created_at", { ascending: false });
       if (campaignId) charactersQuery = charactersQuery.eq("campaign_id", campaignId);
@@ -294,7 +300,7 @@ function Combate() {
   }
 
   function addCreature(id: string) {
-    const c = CREATURES.find((x) => x.id === id);
+    const c = creatures.find((x) => x.id === id);
     if (!c) return;
     const same = state.combatants.filter((x) => x.sourceId === c.id).length;
     const comb = combatantFromCreature(c, elColor(c.element));
@@ -408,7 +414,7 @@ function Combate() {
   }
 
 
-  const filtered = CREATURES.filter((c) =>
+  const filtered = creatures.filter((c) =>
     `${c.name} ${c.epithet}`.toLowerCase().includes(query.trim().toLowerCase()),
   ).slice(0, 8);
 
@@ -513,7 +519,10 @@ function Combate() {
                   onClick={() => addCreature(c.id)}
                   className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-xs text-white/70 transition-colors hover:bg-white/5 hover:text-foreground"
                 >
-                  <span>{c.name}</span>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Avatar src={c.image} name={c.name} className="size-6" />
+                    <span className="truncate">{c.name}</span>
+                  </span>
                   <span className="font-mono text-[10px]" style={{ color: THREATS[c.threat].color }}>
                     PV {c.hp}
                   </span>
@@ -533,7 +542,10 @@ function Combate() {
                 onClick={() => addCharacter(ch)}
                 className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-xs text-white/70 transition-colors hover:bg-white/5 hover:text-foreground"
               >
-                <span>{ch.name}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <Avatar src={ch.portrait_url} name={ch.name} className="size-6" />
+                  <span className="truncate">{ch.name}</span>
+                </span>
                 <span className="font-mono text-[10px] text-ritual-gold">
                   {ch.hp_current}/{ch.hp_max}
                 </span>
@@ -609,6 +621,7 @@ function CombatantCard({
               {c.initiative}
             </span>
           )}
+          <Avatar src={c.portrait} name={c.name} className="size-12" />
           <div>
             <h3 className="ritual-title text-2xl text-foreground">{c.name}</h3>
             <p className="text-xs italic text-white/45">
@@ -735,5 +748,33 @@ function CombatantCard({
         </div>
       )}
     </div>
+  );
+}
+
+
+function Avatar({
+  src,
+  name,
+  className = "size-10",
+}: {
+  src?: string | null;
+  name: string;
+  className?: string;
+}) {
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        className={`${className} shrink-0 rounded-lg border border-white/10 object-cover`}
+      />
+    );
+  }
+  return (
+    <span
+      className={`${className} ritual-title flex shrink-0 items-center justify-center rounded-lg border border-white/10 bg-void-blue text-ritual-gold`}
+    >
+      {name.charAt(0).toUpperCase()}
+    </span>
   );
 }
