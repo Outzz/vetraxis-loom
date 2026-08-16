@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,7 @@ import {
 const searchSchema = z.object({
   campaign: z.string().uuid().optional(),
 });
+
 
 export const Route = createFileRoute("/_authenticated/characters/new")({
   head: () => ({
@@ -46,7 +47,6 @@ const ATTR_KEYS = Object.keys(ATTRIBUTES) as AttributeKey[];
 
 function NewCharacter() {
   const navigate = useNavigate();
-  const { campaign } = Route.useSearch();
 
   const [name, setName] = useState("");
   const [concept, setConcept] = useState("");
@@ -61,16 +61,6 @@ function NewCharacter() {
     res: ATTR_START,
   });
   const [saving, setSaving] = useState(false);
-  const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
-  const [campaignId, setCampaignId] = useState(campaign ?? "");
-
-  useEffect(() => {
-    supabase
-      .from("campaigns")
-      .select("id, name")
-      .order("name")
-      .then(({ data }) => setCampaigns(data ?? []));
-  }, []);
 
   // Pool: 4 pontos + 1 ponto extra por atributo reduzido a 0.
   const { pool, remaining, zeroed } = useMemo(() => {
@@ -133,7 +123,7 @@ function NewCharacter() {
       .from("characters")
       .insert({
         owner_id: u.user.id,
-        campaign_id: campaignId || null,
+        campaign_id: null,
         name: name.trim(),
         concept: concept.trim() || null,
         origin: origin.trim() || null,
@@ -255,27 +245,6 @@ function NewCharacter() {
                 <p className="text-[10px] text-white/35">JPG, PNG ou WebP. A imagem será otimizada.</p>
               </div>
             </div>
-          </div>
-          <div>
-            <label
-              htmlFor="character-campaign"
-              className="ml-1 text-[10px] uppercase tracking-widest text-white/40"
-            >
-              Campanha (opcional)
-            </label>
-            <select
-              id="character-campaign"
-              value={campaignId}
-              onChange={(e) => setCampaignId(e.target.value)}
-              className="mt-1.5 w-full rounded-lg border border-white/5 bg-abyss px-4 py-3 text-sm text-foreground focus:border-prismatic/40 focus:outline-none"
-            >
-              <option value="">Portador independente</option>
-              {campaigns.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
           </div>
         </section>
 
