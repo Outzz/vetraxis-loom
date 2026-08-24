@@ -68,6 +68,7 @@ function CampaignDetail() {
   const [linking, setLinking] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showEdit, setShowEdit] = useState(false);
+  const [recKey, setRecKey] = useState(0);
 
   async function load() {
     const { data: u } = await supabase.auth.getUser();
