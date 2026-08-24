@@ -3,6 +3,7 @@ import { BookOpen, Copy, Pencil, Plus, Swords, UserRoundPlus } from "lucide-reac
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { ScreenShare } from "@/components/ScreenShare";
 import { prepareCharacterPortrait } from "@/lib/character-image";
 import { ELEMENTS, type CosmicElement } from "@/lib/game-data";
 import { Field, ModalShell } from "./campaigns.index";
@@ -399,6 +400,17 @@ function CampaignDetail() {
           </ul>
         )}
       </section>
+
+      {userId && (
+        <ScreenShare
+          campaignId={campaign.id}
+          userId={userId}
+          displayName={
+            members.find((m) => m.user_id === userId)?.profile?.display_name ?? "Portador"
+          }
+        />
+      )}
+
 
       <section className="mt-12">
         <div className="mb-4 flex items-center justify-between">
