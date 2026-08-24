@@ -3,6 +3,7 @@ import { BookOpen, Copy, Pencil, Plus, Swords, UserRoundPlus } from "lucide-reac
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { RecordingHistory } from "@/components/RecordingHistory";
 import { ScreenShare } from "@/components/ScreenShare";
 import { prepareCharacterPortrait } from "@/lib/character-image";
 import { ELEMENTS, type CosmicElement } from "@/lib/game-data";
@@ -67,6 +68,7 @@ function CampaignDetail() {
   const [linking, setLinking] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showEdit, setShowEdit] = useState(false);
+  const [recKey, setRecKey] = useState(0);
 
   async function load() {
     const { data: u } = await supabase.auth.getUser();
@@ -402,13 +404,18 @@ function CampaignDetail() {
       </section>
 
       {userId && (
-        <ScreenShare
-          campaignId={campaign.id}
-          userId={userId}
-          displayName={
-            members.find((m) => m.user_id === userId)?.profile?.display_name ?? "Portador"
-          }
-        />
+        <>
+          <ScreenShare
+            campaignId={campaign.id}
+            userId={userId}
+            canBroadcast={isMaster}
+            displayName={
+              members.find((m) => m.user_id === userId)?.profile?.display_name ?? "Portador"
+            }
+            onRecordingSaved={() => setRecKey((k) => k + 1)}
+          />
+          <RecordingHistory campaignId={campaign.id} isMaster={isMaster} refreshKey={recKey} />
+        </>
       )}
 
 
