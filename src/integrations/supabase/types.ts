@@ -81,6 +81,50 @@ export type Database = {
           },
         ]
       }
+      campaign_recordings: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          duration_seconds: number
+          id: string
+          recorded_by: string
+          size_bytes: number
+          storage_path: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          recorded_by: string
+          size_bytes?: number
+          storage_path: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          recorded_by?: string
+          size_bytes?: number
+          storage_path?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_recordings_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           banner_url: string | null
