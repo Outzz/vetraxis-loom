@@ -402,13 +402,18 @@ function CampaignDetail() {
       </section>
 
       {userId && (
-        <ScreenShare
-          campaignId={campaign.id}
-          userId={userId}
-          displayName={
-            members.find((m) => m.user_id === userId)?.profile?.display_name ?? "Portador"
-          }
-        />
+        <>
+          <ScreenShare
+            campaignId={campaign.id}
+            userId={userId}
+            canBroadcast={isMaster}
+            displayName={
+              members.find((m) => m.user_id === userId)?.profile?.display_name ?? "Portador"
+            }
+            onRecordingSaved={() => setRecKey((k) => k + 1)}
+          />
+          <RecordingHistory campaignId={campaign.id} isMaster={isMaster} refreshKey={recKey} />
+        </>
       )}
 
 
