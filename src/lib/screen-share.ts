@@ -46,13 +46,74 @@ export function presetFor(id: QualityId): QualityPreset {
   return QUALITY_PRESETS[id === "auto" ? "media" : id];
 }
 
-/** Aplica limites de bitrate/fps/escala em todos os envios de vídeo do peer. */
+/** Áudio sempre em alta fidelidade: estéreo 48 kHz, sem processamento de voz. */
+export const HQ_AUDIO_CONSTRAINTS: MediaTrackConstraints = {
+  echoCancellation: false,
+  noiseSuppression: false,
+  autoGainControl: false,
+  channelCount: 2,
+  sampleRate: 48000,
+  sampleSize: 16,
+};
+
+/** Bitrate fixo e generoso para o áudio — nunca é reduzido junto com o vídeo. */
+export const AUDIO_MAX_BITRATE = 256_000;
+
+/** Força Opus estéreo com bitrate alto no SDP (o padrão do WebRTC é mono ~32 kbps). */
+export function boostAudioSdp(sdp: string): string {
+  const payload = sdp.match(/a=rtpmap:(\d+) opus\/48000\/2/i)?.[1];
+  if (!payload) return sdp;
+  const fmtp = new RegExp(`a=fmtp:${payload} ([^\\r\\n]*)`);
+  const extras = [
+    "stereo=1",
+    "sprop-stereo=1",
+    "maxaveragebitrate=256000",
+    "maxplaybackrate=48000",
+    "cbr=0",
+    "useinbandfec=1",
+  ];
+  if (fmtp.test(sdp)) {
+    return sdp.replace(fmtp, (_m, params: string) => {
+      const kept = params
+        .split(";")
+        .map((p) => p.trim())
+        .filter((p) => p && !extras.some((e) => p.startsWith(e.split("=")[0] + "=")));
+      return `a=fmtp:${payload} ${[...kept, ...extras].join(";")}`;
+    });
+  }
+  return sdp.replace(
+    new RegExp(`(a=rtpmap:${payload} opus/48000/2[^\\r\\n]*)`),
+    `$1\r\na=fmtp:${payload} ${extras.join(";")}`,
+  );
+}
+
+export function withBoostedAudio(desc: RTCSessionDescriptionInit): RTCSessionDescriptionInit {
+  return desc.sdp ? { type: desc.type, sdp: boostAudioSdp(desc.sdp) } : desc;
+}
+
+/** Aplica limites de bitrate/fps/escala no vídeo e mantém o áudio intacto e alto. */
 export async function applyQualityToPeer(pc: RTCPeerConnection, preset: QualityPreset) {
   for (const sender of pc.getSenders()) {
-    if (sender.track?.kind !== "video") continue;
+    const kind = sender.track?.kind;
+    if (kind !== "video" && kind !== "audio") continue;
     const params = sender.getParameters();
     if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
-    const settings = sender.track.getSettings();
+
+    if (kind === "audio") {
+      sender.track!.enabled = true;
+      params.encodings[0]!.active = true;
+      params.encodings[0]!.maxBitrate = AUDIO_MAX_BITRATE;
+      delete params.encodings[0]!.maxFramerate;
+      delete params.encodings[0]!.scaleResolutionDownBy;
+      try {
+        await sender.setParameters(params);
+      } catch {
+        /* alguns navegadores recusam parâmetros parciais */
+      }
+      continue;
+    }
+
+    const settings = sender.track!.getSettings();
     const sourceHeight = settings.height ?? preset.height;
     params.encodings[0]!.maxBitrate = preset.maxBitrate;
     params.encodings[0]!.maxFramerate = preset.frameRate;
@@ -64,6 +125,7 @@ export async function applyQualityToPeer(pc: RTCPeerConnection, preset: QualityP
     }
   }
 }
+
 
 export type ConnectionHealth = "boa" | "instavel" | "ruim";
 
