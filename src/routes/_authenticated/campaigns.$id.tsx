@@ -400,6 +400,17 @@ function CampaignDetail() {
         )}
       </section>
 
+      {userId && (
+        <ScreenShare
+          campaignId={campaign.id}
+          userId={userId}
+          displayName={
+            members.find((m) => m.user_id === userId)?.profile?.display_name ?? "Portador"
+          }
+        />
+      )}
+
+
       <section className="mt-12">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="ritual-title text-2xl text-foreground">Personagens ativos</h2>
