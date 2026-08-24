@@ -3,6 +3,7 @@ import { BookOpen, Copy, Pencil, Plus, Swords, UserRoundPlus } from "lucide-reac
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { RecordingHistory } from "@/components/RecordingHistory";
 import { ScreenShare } from "@/components/ScreenShare";
 import { prepareCharacterPortrait } from "@/lib/character-image";
 import { ELEMENTS, type CosmicElement } from "@/lib/game-data";
