@@ -229,7 +229,7 @@ export function ScreenShare({
           setViewers(Object.keys(peersRef.current).length);
         }
       };
-      const offer = await pc.createOffer();
+      const offer = withBoostedAudio(await pc.createOffer());
       await pc.setLocalDescription(offer);
       await applyQualityToPeer(pc, presetFor(effectiveRef.current));
       setViewers(Object.keys(peersRef.current).length);
@@ -242,17 +242,28 @@ export function ScreenShare({
       peersRef.current[hostId] = pc;
       pc.ontrack = (e) => {
         const stream = e.streams[0];
-        setAudioAvailable((stream?.getAudioTracks().length ?? 0) > 0);
-        if (videoRef.current && stream) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
+        const hasAudio = (stream?.getAudioTracks().length ?? 0) > 0;
+        setAudioAvailable(hasAudio);
+        const el = videoRef.current;
+        if (el && stream) {
+          el.srcObject = stream;
+          el.muted = false;
+          el.volume = 1;
+          el.play()
+            .then(() => setNeedsSound(false))
+            .catch(() => {
+              // autoplay com som bloqueado: toca mudo e oferece botão para ativar
+              el.muted = true;
+              el.play().catch(() => {});
+              if (hasAudio) setNeedsSound(true);
+            });
         }
       };
       pc.onicecandidate = (e) => {
         if (e.candidate) send("ice", { from: userId, to: hostId, candidate: e.candidate.toJSON() });
       };
-      await pc.setRemoteDescription(sdp);
-      const answer = await pc.createAnswer();
+      await pc.setRemoteDescription(withBoostedAudio(sdp));
+      const answer = withBoostedAudio(await pc.createAnswer());
       await pc.setLocalDescription(answer);
       send("answer", { from: userId, to: hostId, sdp: answer });
     };
