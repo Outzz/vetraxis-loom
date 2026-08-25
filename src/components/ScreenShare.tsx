@@ -153,7 +153,11 @@ export function ScreenShare({
       return;
     }
     try {
-      const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 2_000_000 });
+      const rec = new MediaRecorder(stream, {
+        mimeType: mime,
+        videoBitsPerSecond: 2_000_000,
+        audioBitsPerSecond: 256_000,
+      });
       chunksRef.current = [];
       recStartRef.current = Date.now();
       rec.ondataavailable = (e) => {
