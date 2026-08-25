@@ -562,16 +562,34 @@ export function ScreenShare({
         </div>
       )}
 
-      <div className="mt-5 overflow-hidden rounded-xl border border-white/10 bg-black/60">
+      <div className="relative mt-5 overflow-hidden rounded-xl border border-white/10 bg-black/60">
         {live ? (
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            controls={!sharing}
-            muted={sharing || !audioAvailable}
-            className="aspect-video w-full bg-black"
-          />
+          <>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              controls={!sharing}
+              muted={sharing || needsSound}
+              className="aspect-video w-full bg-black"
+            />
+            {!sharing && needsSound && audioAvailable && (
+              <button
+                onClick={() => {
+                  const el = videoRef.current;
+                  if (!el) return;
+                  el.muted = false;
+                  el.volume = 1;
+                  el.play()
+                    .then(() => setNeedsSound(false))
+                    .catch(() => {});
+                }}
+                className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-md bg-prismatic px-4 py-2.5 text-[10px] uppercase tracking-widest text-foreground hover:bg-prismatic/80"
+              >
+                <Volume2 className="size-3.5" /> Ativar som
+              </button>
+            )}
+          </>
         ) : (
           <div className="flex aspect-video w-full items-center justify-center text-xs text-white/30">
             Nenhuma transmissão ativa nesta crônica.
