@@ -380,7 +380,10 @@ export function ScreenShare({
     try {
       let stream: MediaStream;
       try {
-        stream = await navigator.mediaDevices.getDisplayMedia({ video, audio: withAudio });
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video,
+          audio: withAudio ? HQ_AUDIO_CONSTRAINTS : false,
+        });
       } catch (err) {
         if (!withAudio || (err as DOMException)?.name === "NotAllowedError") throw err;
         // Fallback: alguns navegadores/SOs recusam captura de áudio da tela.
