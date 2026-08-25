@@ -73,6 +73,7 @@ export function ScreenShare({
   const [health, setHealth] = useState<ConnectionHealth>("boa");
   const [withAudio, setWithAudio] = useState(true);
   const [audioAvailable, setAudioAvailable] = useState(false);
+  const [needsSound, setNeedsSound] = useState(false);
 
   const [autoRecord, setAutoRecord] = useState(true);
   const [recording, setRecording] = useState(false);
