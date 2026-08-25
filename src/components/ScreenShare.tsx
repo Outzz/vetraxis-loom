@@ -15,11 +15,13 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import {
   applyQualityToPeer,
   formatDuration,
+  HQ_AUDIO_CONSTRAINTS,
   pickRecorderMime,
   presetFor,
   QUALITY_ORDER,
   QUALITY_PRESETS,
   readHealth,
+  withBoostedAudio,
   type ConnectionHealth,
   type QualityId,
 } from "@/lib/screen-share";
