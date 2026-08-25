@@ -15,11 +15,13 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import {
   applyQualityToPeer,
   formatDuration,
+  HQ_AUDIO_CONSTRAINTS,
   pickRecorderMime,
   presetFor,
   QUALITY_ORDER,
   QUALITY_PRESETS,
   readHealth,
+  withBoostedAudio,
   type ConnectionHealth,
   type QualityId,
 } from "@/lib/screen-share";
@@ -71,6 +73,7 @@ export function ScreenShare({
   const [health, setHealth] = useState<ConnectionHealth>("boa");
   const [withAudio, setWithAudio] = useState(true);
   const [audioAvailable, setAudioAvailable] = useState(false);
+  const [needsSound, setNeedsSound] = useState(false);
 
   const [autoRecord, setAutoRecord] = useState(true);
   const [recording, setRecording] = useState(false);
@@ -150,7 +153,11 @@ export function ScreenShare({
       return;
     }
     try {
-      const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 2_000_000 });
+      const rec = new MediaRecorder(stream, {
+        mimeType: mime,
+        videoBitsPerSecond: 2_000_000,
+        audioBitsPerSecond: 256_000,
+      });
       chunksRef.current = [];
       recStartRef.current = Date.now();
       rec.ondataavailable = (e) => {
@@ -222,7 +229,7 @@ export function ScreenShare({
           setViewers(Object.keys(peersRef.current).length);
         }
       };
-      const offer = await pc.createOffer();
+      const offer = withBoostedAudio(await pc.createOffer());
       await pc.setLocalDescription(offer);
       await applyQualityToPeer(pc, presetFor(effectiveRef.current));
       setViewers(Object.keys(peersRef.current).length);
@@ -235,17 +242,28 @@ export function ScreenShare({
       peersRef.current[hostId] = pc;
       pc.ontrack = (e) => {
         const stream = e.streams[0];
-        setAudioAvailable((stream?.getAudioTracks().length ?? 0) > 0);
-        if (videoRef.current && stream) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
+        const hasAudio = (stream?.getAudioTracks().length ?? 0) > 0;
+        setAudioAvailable(hasAudio);
+        const el = videoRef.current;
+        if (el && stream) {
+          el.srcObject = stream;
+          el.muted = false;
+          el.volume = 1;
+          el.play()
+            .then(() => setNeedsSound(false))
+            .catch(() => {
+              // autoplay com som bloqueado: toca mudo e oferece botão para ativar
+              el.muted = true;
+              el.play().catch(() => {});
+              if (hasAudio) setNeedsSound(true);
+            });
         }
       };
       pc.onicecandidate = (e) => {
         if (e.candidate) send("ice", { from: userId, to: hostId, candidate: e.candidate.toJSON() });
       };
-      await pc.setRemoteDescription(sdp);
-      const answer = await pc.createAnswer();
+      await pc.setRemoteDescription(withBoostedAudio(sdp));
+      const answer = withBoostedAudio(await pc.createAnswer());
       await pc.setLocalDescription(answer);
       send("answer", { from: userId, to: hostId, sdp: answer });
     };
@@ -362,7 +380,10 @@ export function ScreenShare({
     try {
       let stream: MediaStream;
       try {
-        stream = await navigator.mediaDevices.getDisplayMedia({ video, audio: withAudio });
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video,
+          audio: withAudio ? HQ_AUDIO_CONSTRAINTS : false,
+        });
       } catch (err) {
         if (!withAudio || (err as DOMException)?.name === "NotAllowedError") throw err;
         // Fallback: alguns navegadores/SOs recusam captura de áudio da tela.
@@ -544,16 +565,34 @@ export function ScreenShare({
         </div>
       )}
 
-      <div className="mt-5 overflow-hidden rounded-xl border border-white/10 bg-black/60">
+      <div className="relative mt-5 overflow-hidden rounded-xl border border-white/10 bg-black/60">
         {live ? (
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            controls={!sharing}
-            muted={sharing || !audioAvailable}
-            className="aspect-video w-full bg-black"
-          />
+          <>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              controls={!sharing}
+              muted={sharing || needsSound}
+              className="aspect-video w-full bg-black"
+            />
+            {!sharing && needsSound && audioAvailable && (
+              <button
+                onClick={() => {
+                  const el = videoRef.current;
+                  if (!el) return;
+                  el.muted = false;
+                  el.volume = 1;
+                  el.play()
+                    .then(() => setNeedsSound(false))
+                    .catch(() => {});
+                }}
+                className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-md bg-prismatic px-4 py-2.5 text-[10px] uppercase tracking-widest text-foreground hover:bg-prismatic/80"
+              >
+                <Volume2 className="size-3.5" /> Ativar som
+              </button>
+            )}
+          </>
         ) : (
           <div className="flex aspect-video w-full items-center justify-center text-xs text-white/30">
             Nenhuma transmissão ativa nesta crônica.
