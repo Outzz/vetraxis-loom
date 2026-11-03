@@ -158,13 +158,13 @@ export const ATTRIBUTES: Record<
   dex: {
     name: "Destreza",
     short: "DES",
-    description: "Furtividade, Mira, Iniciativa, Defesa base.",
+    description: "Furtividade, Pontaria, Iniciativa, Defesa base.",
     zero: "Sempre age por último; sem bônus de Defesa.",
   },
   int: {
     name: "Intelecto",
     short: "INT",
-    description: "Ocultismo, Ritualismo, Sanidade base, controle de poderes.",
+    description: "Bruxaria, Bruxaria, Sanidade base, controle de poderes.",
     zero: "Falha crítica em poderes gera Corrupção dobrada.",
   },
   cha: {
@@ -229,7 +229,7 @@ export const CLASSES: Record<CharacterClass, ClassData> = {
     resources: [
       "Vitalidade elevada: +4 PV máximos.",
       "Proficiências: armas leves, médias e pesadas; proteções leves, médias e pesadas.",
-      "Perícias recomendadas: Luta, Mira, Atletismo e Resistência.",
+      "Perícias recomendadas: Luta, Pontaria, Atletismo e Resistência.",
       "Linha de Frente: 1x por rodada, após acertar um ataque, +1d6 de dano extra ou deslocar-se 3 m sem provocar reações.",
     ],
     awakening: {
@@ -355,7 +355,7 @@ export const CLASSES: Record<CharacterClass, ClassData> = {
         name: "Luminário",
         tagline: "Usa a Luz para curar ferimentos, purificar Corrupção e preservar a vida.",
         abilities: [
-          { at: 10, name: "Luz Restauradora", text: "Ação Principal: cure criatura em 6 m em 1d8 + Intelecto PV. 1x por rodada por criatura. Anômala grau 1." },
+          { at: 10, name: "Luz Restauradora", text: "Ação Principal: cure criatura em 6 m em 1d8 + passo de Mente PV. 1x por rodada por criatura. Anômala grau 1." },
           { at: 20, name: "Escudo Solar", text: "Reação: +2 na Defesa de criatura em 9 m contra um ataque; se acertar, Resistência 1d8 contra o dano. Anômala grau 2." },
           { at: 35, name: "Purificação", text: "Toque: remove condição leve/moderada, encerra Sangrando, Queimando, Iludido ou Assombrado e reduz 1d4% de Corrupção (1x por sessão por criatura). Anômala grau 3." },
           { at: 50, name: "Aurora Viva", text: "Aura de 6 m por 3 turnos: aliados recuperam 1d6 PV e +2 Resistência por turno; criaturas de Sombra sofrem 1d6 de Luz. 1x por cena. Anômala grau 4." },
@@ -421,7 +421,7 @@ export const CLASSES: Record<CharacterClass, ClassData> = {
         tagline: "Constrói dispositivos que utilizam as próprias falhas da realidade.",
         abilities: [
           { at: 10, name: "Dispositivo Improvisado", text: "Ação Principal: Emissor de pulso (1d8 em 3 m), Barreira portátil (+1 Defesa por 2 turnos) ou Gancho vetraxiano (move 3 m). Grátis 1x por cena; extras são anômala grau 1." },
-          { at: 20, name: "Torre de Contenção", text: "Instale torre (Defesa 8, PV = 10 + Intelecto). Ação Menor: ataque 1d8 em 12 m, -1 passo no próximo poder do alvo, ou revela invisíveis em 3 m. Anômala grau 2." },
+          { at: 20, name: "Torre de Contenção", text: "Instale torre (Defesa 8, PV = 10 + passo de Mente). Ação Menor: ataque 1d8 em 12 m, -1 passo no próximo poder do alvo, ou revela invisíveis em 3 m. Anômala grau 2." },
           { at: 35, name: "Campo Magnético", text: "Área de 6 m por 3 turnos: ataques físicos à distância -2; armas metálicas não são arremessadas; dispositivos +1 Defesa. Anômala grau 3." },
           { at: 50, name: "Drone Orbital", text: "1x por cena, 3 turnos: Disparo (2d8 em 18 m), Escudo (Resistência 5 a um aliado) ou Varredura (revela invisíveis e armadilhas em 6 m). Anômala grau 4." },
           { at: 70, name: "Núcleo Experimental", text: "1x por missão, 3 turnos: dispositivos dobram alcance, +1 passo em testes e Defesa e ativam uma vez a mais por rodada. Ao terminar, Físico + Vigor DT 10 ou explodem (3d8). Anômala grau 5." },
@@ -489,7 +489,7 @@ export const CLASSES: Record<CharacterClass, ClassData> = {
           { at: 20, name: "Eco da Marca", text: "1x por rodada, quando o elemento escolhido for usado em 12 m, armazene um Eco: gaste para +1d6 em um teste, dano, cura ou redução de dano." },
           { at: 35, name: "A Marca Responde", text: "Reação, 1 PS, +1% Corrupção: 1d6 elemental em 12 m, teleporte 3 m, recupere 1d6 PV, +1 Defesa contra um ataque ou mova um aliado 3 m." },
           { at: 50, name: "Destino Vinculado", text: "Reação, +3% Corrupção: ao chegar a 0 PV ou sofrer Colapso Mental, fique com 1 PV ou 1 PS e desloque-se 3 m. 1x por cena." },
-          { at: 70, name: "Escolhido pela Ruptura", text: "1x por missão: use um poder de grau 4 do seu elemento mesmo sem conhecê-lo (Resiliência + Ocultismo). Depois: +8% Corrupção e perde 1d6 PS." },
+          { at: 70, name: "Escolhido pela Ruptura", text: "1x por missão: use um poder de grau 4 do seu elemento mesmo sem conhecê-lo (Resiliência + Bruxaria). Depois: +8% Corrupção e perde 1d6 PS." },
         ],
       },
       {
@@ -497,7 +497,7 @@ export const CLASSES: Record<CharacterClass, ClassData> = {
         name: "Socorrista",
         tagline: "Mantém os outros vivos através de conhecimento médico, rapidez e sangue-frio.",
         abilities: [
-          { at: 10, name: "Primeiros Socorros", text: "Ação Principal com kit médico, Mente + Inspecionar DT 5: recupera 1d8 + Intelecto PV e remove Sangrando. 1x por cena por criatura." },
+          { at: 10, name: "Primeiros Socorros", text: "Ação Principal com kit médico, Mente + Inspecionar DT 5: recupera 1d8 + passo de Mente PV e remove Sangrando. 1x por cena por criatura." },
           { at: 20, name: "Estimulante", text: "Ação Menor: por 2 turnos +3 m de deslocamento e +1 passo em ataques físicos e Resistência. Ao terminar perde 1d4 PV. Uma criatura por cena." },
           { at: 35, name: "Reviver", text: "Ação Principal em criatura com 0 PV, Mente + Inspecionar DT 8: recupera 1d6 PV e sai do Estado de Ruptura. Falha apenas estabiliza." },
           { at: 50, name: "Cirurgia de Campo", text: "10 minutos em local seguro, Mente + Inspecionar DT 9: 4d8 PV, remove condição física moderada ou grave. 1x por descanso longo." },
@@ -513,7 +513,7 @@ export const CLASSES: Record<CharacterClass, ClassData> = {
           { at: 20, name: "Escalada", text: "Escala, nada e atravessa terreno difícil com deslocamento normal. Carregando aliado, perde apenas 3 m de deslocamento." },
           { at: 35, name: "Resistência Ambiental", text: "Resistência 5 contra calor, frio, pressão, queda, atmosfera tóxica e gravidade anômala. +1 passo contra venenos, Congelado, Queimando e Deslocado." },
           { at: 50, name: "Acampamento Seguro", text: "Em 10 minutos prepare descanso protegido: +1d6 PV e +1 PS por personagem no descanso curto; sem surpresa inimiga. 1x por descanso longo." },
-          { at: 70, name: "Mestre da Sobrevivência", text: "Aliados em 6 m ignoram terreno difícil, +1 passo contra perigos ambientais e Resistência 3 contra dano de ambiente. 1x por cena, Intelecto ou Físico + Vigor DT 9 converte falhas coletivas em sucesso." },
+          { at: 70, name: "Mestre da Sobrevivência", text: "Aliados em 6 m ignoram terreno difícil, +1 passo contra perigos ambientais e Resistência 3 contra dano de ambiente. 1x por cena, Mente ou Físico + Vigor DT 9 converte falhas coletivas em sucesso." },
         ],
       },
       {
@@ -521,8 +521,8 @@ export const CLASSES: Record<CharacterClass, ClassData> = {
         name: "Pesquisador",
         tagline: "Conhecimento histórico, científico e arcano para derrotar o impossível.",
         abilities: [
-          { at: 10, name: "Memória Fotográfica", text: "Recorda textos, símbolos, mapas e conversas. 1x por cena: +1 passo em teste de Intelecto, repita uma pista ou reconstrua um documento observado." },
-          { at: 20, name: "Conhecimento Arcano", text: "+1 passo em Ocultismo e Ritualismo para identificar poderes, elementos, Relíquias, portais e contenção — inclusive o risco de Corrupção aparente." },
+          { at: 10, name: "Memória Fotográfica", text: "Recorda textos, símbolos, mapas e conversas. 1x por cena: +1 passo em teste de Mente, repita uma pista ou reconstrua um documento observado." },
+          { at: 20, name: "Conhecimento Arcano", text: "+1 passo em Bruxaria para identificar poderes, elementos, Relíquias, portais e contenção — inclusive o risco de Corrupção aparente." },
           { at: 35, name: "Leitura Instantânea", text: "Ação Principal, Mente + Inspecionar DT 8: faça 2 perguntas (função, ativação, perigo, criador, desativação, fraqueza). Falha: 1 pergunta e -1 PS se anômalo." },
           { at: 50, name: "Revelação", text: "Por 3 turnos aliados ganham +1 passo nos ataques contra a criatura analisada e ignoram 3 de Resistência; ela não repete disfarces ou padrões. 1x por cena." },
           { at: 70, name: "Biblioteca Viva", text: "1x por missão: declare estudo prévio e receba informação verdadeira e relevante. Na cena, aliados em 6 m recebem +1 passo em Mente." },
@@ -832,8 +832,8 @@ export const CONDITIONS = [
   { name: "Corrompido (suave)", effect: "Bônus em ataque, penalidade social.", duration: "Persistente", removal: "Reduzir Corrupção." },
   { name: "Deslocado", effect: "Gravidade instável; -1 Defesa/DES.", duration: "Variável", removal: "Estabilização." },
   { name: "Dominado", effect: "Age conforme o controlador.", duration: "Variável", removal: "Resiliência CD alto ou ritual." },
-  { name: "Iludido", effect: "-2 passos em testes intelectuais.", duration: "Até clarificação", removal: "Efeito revelador." },
-  { name: "Assombrado", effect: "-1 passo em testes mentais.", duration: "Até exorcismo", removal: "Exorcismo ou ritual." },
+  { name: "Iludido", effect: "-2 passos em testes de Mente.", duration: "Até clarificação", removal: "Efeito revelador." },
+  { name: "Assombrado", effect: "-1 passo em testes de Mente.", duration: "Até exorcismo", removal: "Exorcismo ou ritual." },
   { name: "Fragmentado", effect: "Corpo entre planos; vulnerável a Éter.", duration: "Progressiva", removal: "Intervenção drástica." },
 ] as const;
 
@@ -853,9 +853,9 @@ export const SKILLS: { key: string; name: string; attr: AttributeKey }[] = [
   { key: "luta", name: "Luta", attr: "str" },
   { key: "atletismo", name: "Atletismo", attr: "str" },
   { key: "furtividade", name: "Furtividade", attr: "dex" },
-  { key: "mira", name: "Mira", attr: "dex" },
-  { key: "ocultismo", name: "Ocultismo", attr: "int" },
-  { key: "ritualismo", name: "Ritualismo", attr: "int" },
+  { key: "mira", name: "Pontaria", attr: "dex" },
+  { key: "ocultismo", name: "Bruxaria", attr: "int" },
+  { key: "ritualismo", name: "Bruxaria", attr: "int" },
   { key: "persuasao", name: "Persuasão", attr: "cha" },
   { key: "vontade", name: "Resistência/Vontade", attr: "res" },
   { key: "iniciativa", name: "Iniciativa", attr: "dex" },
