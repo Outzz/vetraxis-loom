@@ -142,51 +142,61 @@ export const RELICS: Record<
   },
 };
 
-// Cap. 4.0 — Criação de Personagem: cinco atributos, começando em 1
-export type AttributeKey = "str" | "dex" | "int" | "cha" | "res";
+// Atributos — mecânica Atributo + Perícia (dados d4 → d12)
+export type AttributeKey = "fis" | "men" | "emo";
 
 export const ATTRIBUTES: Record<
   AttributeKey,
   { name: string; short: string; description: string; zero: string }
 > = {
-  str: {
-    name: "Força",
-    short: "FOR",
-    description: "Luta, Atletismo, dano físico corpo a corpo.",
-    zero: "Não pode carregar itens pesados; -1 passo em ataques físicos.",
+  fis: {
+    name: "Físico",
+    short: "FÍS",
+    description: "Força, coordenação, velocidade e resistência corporal.",
+    zero: "d4 — abaixo da média: o corpo falha quando mais se precisa dele.",
   },
-  dex: {
-    name: "Destreza",
-    short: "DES",
-    description: "Furtividade, Pontaria, Iniciativa, Defesa base.",
-    zero: "Sempre age por último; sem bônus de Defesa.",
+  men: {
+    name: "Mente",
+    short: "MEN",
+    description: "Raciocínio, conhecimento, percepção e capacidade intelectual.",
+    zero: "d4 — abaixo da média: a Anomalia confunde facilmente seus sentidos.",
   },
-  int: {
-    name: "Intelecto",
-    short: "INT",
-    description: "Bruxaria, Bruxaria, Sanidade base, controle de poderes.",
-    zero: "Falha crítica em poderes gera Corrupção dobrada.",
-  },
-  cha: {
-    name: "Carisma",
-    short: "CAR",
-    description: "Persuasão, liderança, influência sobre Relíquias.",
-    zero: "Relíquias ignoram os desejos do portador com mais frequência.",
-  },
-  res: {
-    name: "Resiliência",
-    short: "RES",
-    description: "Resistência a Corrupção, PV base, testes de condição.",
-    zero: "Qualquer Corrupção recebida nunca é reduzida à metade.",
+  emo: {
+    name: "Emoção",
+    short: "EMO",
+    description: "Força de vontade, instintos e capacidade social.",
+    zero: "d4 — abaixo da média: sua vontade cede diante do horror.",
   },
 };
 
-// Criação (Cap. 4.0): todos começam em 1, 4 pontos para distribuir, máximo inicial 3.
-// Reduzir um atributo a 0 concede +1 ponto extra.
-export const ATTR_START = 1;
-export const ATTR_POINTS = 4;
-export const ATTR_MAX_START = 3;
-export const ATTR_MAX_LEVEL = 4; // sobe para 5 no Despertar (nível 10) no elemento
+/** Coluna do banco que guarda o dado de cada atributo (valor = nº de faces). */
+export const ATTR_COLUMN = { fis: "str_score", men: "int_score", emo: "cha_score" } as const;
+
+export const ATTR_SCALE: Record<number, string> = {
+  4: "Abaixo da média",
+  6: "Média humana",
+  8: "Acima da média",
+  10: "Muito acima da média",
+  12: "Ápice humano",
+  20: "Anômalo (excepcional)",
+};
+
+export const SKILL_SCALE: Record<number, string> = {
+  4: "Destreinado",
+  6: "Treinado",
+  8: "Especialista",
+  10: "Mestre",
+  12: "Grão-mestre",
+  20: "Anômalo (excepcional)",
+};
+
+// Criação (ADAPTAÇÃO — o texto de referência não traz regras de criação):
+// todos os atributos começam em d6; distribua 2 aumentos de passo; máximo inicial d10.
+// Reduzir um atributo para d4 concede +1 aumento extra.
+export const ATTR_START = 6;
+export const ATTR_POINTS = 2;
+export const ATTR_MAX_START = 10;
+export const SKILL_START = 4;
 
 // Classes e Trilhas (Cap. 4.2 — Ed. 1.2)
 export type CharacterClass = "confrontador" | "condutor" | "operador" | "sobrevivente";
@@ -225,7 +235,7 @@ export const CLASSES: Record<CharacterClass, ClassData> = {
     name: "Confrontador",
     tagline:
       "Combatentes preparados para enfrentar Anomalias diretamente, suportando danos que destruiriam pessoas comuns.",
-    keyAttrs: ["str", "res"],
+    keyAttrs: ["fis"],
     resources: [
       "Vitalidade elevada: +4 PV máximos.",
       "Proficiências: armas leves, médias e pesadas; proteções leves, médias e pesadas.",
@@ -302,7 +312,7 @@ export const CLASSES: Record<CharacterClass, ClassData> = {
   condutor: {
     name: "Condutor",
     tagline: "Portadores especializados em canalizar, moldar e controlar os sete Elementos Cósmicos.",
-    keyAttrs: ["int", "cha"],
+    keyAttrs: ["men", "emo"],
     resources: [
       "Pontos de Anomalia: +2 no PA máximo.",
       "Sintonia elemental: escolha um elemento e aprenda dois poderes de grau 1 associados.",
@@ -379,7 +389,7 @@ export const CLASSES: Record<CharacterClass, ClassData> = {
   operador: {
     name: "Operador",
     tagline: "Especialistas em tecnologia, investigação, preparação, informação e controle tático.",
-    keyAttrs: ["int", "dex"],
+    keyAttrs: ["men", "fis"],
     resources: [
       "Conhecimento técnico: +1 passo em Mente para analisar, fabricar, reparar ou operar tecnologia.",
       "Inventário ampliado: mantém um dispositivo tecnológico ativo além do limite normal.",
@@ -456,7 +466,7 @@ export const CLASSES: Record<CharacterClass, ClassData> = {
   sobrevivente: {
     name: "Sobrevivente",
     tagline: "Pessoas comuns que enfrentam o impossível com conhecimento, sorte, coragem e determinação.",
-    keyAttrs: ["res", "int"],
+    keyAttrs: ["emo", "fis"],
     resources: [
       "Humanidade preservada: não começa com poderes elementais; habilidades normalmente não geram Corrupção.",
       "Sanidade elevada: +2 PS máximos.",
@@ -546,9 +556,10 @@ export const MULTICLASS_RULE =
   "Requisitos: nível ≥ 5 e Corrupção ≥ 40%. Custo: perda parcial de Sanidade/PV máximos; ganha habilidades de ambas as classes. Irreversível.";
 
 
-// No Anomalia Cósmica o valor do atributo JÁ é o bônus somado nos testes.
-export function attrModifier(score: number): number {
-  return score;
+/** Passo do dado (d4=0, d6=1, d8=2, d10=3, d12=4) — usado em fórmulas fixas. */
+export function attrModifier(die: number): number {
+  const i = [4, 6, 8, 10, 12].indexOf(die);
+  return i < 0 ? (die >= 12 ? 4 : 0) : i;
 }
 
 /* ---------- Bônus automáticos de Classe (Cap. 4.2) ---------- */
@@ -573,7 +584,7 @@ export const CLASS_BONUSES: Record<CharacterClass, ClassBonuses> = {
       "Armas leves, médias e pesadas",
       "Proteções leves, médias e pesadas",
     ],
-    recommendedSkills: ["luta", "mira", "atletismo", "vontade"],
+    recommendedSkills: ["luta", "pontaria", "atletismo", "vigor"],
     features: [
       {
         name: "Linha de Frente",
@@ -587,7 +598,7 @@ export const CLASS_BONUSES: Record<CharacterClass, ClassBonuses> = {
     pa: 2,
     defense: 0,
     proficiencies: ["Armas leves e simples", "Proteções leves"],
-    recommendedSkills: ["ocultismo", "ritualismo", "persuasao"],
+    recommendedSkills: ["bruxaria", "disciplina", "persuasao"],
     features: [
       {
         name: "Sintonia Elemental",
@@ -605,7 +616,7 @@ export const CLASS_BONUSES: Record<CharacterClass, ClassBonuses> = {
     pa: 0,
     defense: 0,
     proficiencies: ["Armas leves e de fogo médias", "Proteções leves"],
-    recommendedSkills: ["ocultismo", "furtividade", "mira"],
+    recommendedSkills: ["metalurgia", "inspecionar", "furtividade", "pontaria"],
     features: [
       {
         name: "Conhecimento Técnico",
@@ -627,7 +638,7 @@ export const CLASS_BONUSES: Record<CharacterClass, ClassBonuses> = {
     pa: 0,
     defense: 0,
     proficiencies: ["Armas simples", "Proteções leves"],
-    recommendedSkills: ["vontade", "atletismo", "persuasao"],
+    recommendedSkills: ["disciplina", "sobrevivencia", "vigor", "persuasao"],
     features: [
       {
         name: "Humanidade Preservada",
@@ -655,43 +666,44 @@ export function classBonuses(cls?: CharacterClass | null): ClassBonuses {
   return cls ? CLASS_BONUSES[cls] : NO_BONUS;
 }
 
-// Fórmulas oficiais (Cap. 1.6 e 4.1) — já somando os bônus de classe.
-export function maxHP(res: number, cls?: CharacterClass | null): number {
-  return 10 + res * 2 + classBonuses(cls).hp;
+// Recursos derivados (ADAPTAÇÃO): as fórmulas antigas usavam o valor do atributo;
+// agora usam o PASSO do dado (d4=0 … d12=4), preservando a mesma escala de recursos.
+export function maxHP(fisDie: number, cls?: CharacterClass | null): number {
+  return 10 + attrModifier(fisDie) * 2 + classBonuses(cls).hp;
 }
 
-export function maxSanity(int: number, cls?: CharacterClass | null): number {
-  return 10 + int * 2 + classBonuses(cls).sanity;
+export function maxSanity(menDie: number, cls?: CharacterClass | null): number {
+  return 10 + attrModifier(menDie) * 2 + classBonuses(cls).sanity;
 }
 
-export function maxPA(int: number, cls?: CharacterClass | null): number {
-  return 10 + int * 2 + classBonuses(cls).pa;
+export function maxPA(menDie: number, cls?: CharacterClass | null): number {
+  return 10 + attrModifier(menDie) * 2 + classBonuses(cls).pa;
 }
 
-// Defesa (Cap. 1.5): 10 + Destreza + bônus de armadura + bônus de classe
-export function defenseValue(dex: number, armor = 0, cls?: CharacterClass | null): number {
-  return 10 + dex + armor + classBonuses(cls).defense;
+/** Defesa = DT para ser acertado. Base 7 (DT básica de ataque) + armadura + classe. */
+export function defenseValue(_fisDie: number, armor = 0, cls?: CharacterClass | null): number {
+  return 7 + armor + classBonuses(cls).defense;
 }
 
 /** Todos os recursos derivados de uma ficha, já com a classe aplicada. */
 export function derivedStats(input: {
-  res: number;
-  int: number;
-  dex: number;
+  fis: number;
+  men: number;
+  emo: number;
   cls?: CharacterClass | null;
   armor?: number;
 }) {
   return {
-    hp: maxHP(input.res, input.cls),
-    sanity: maxSanity(input.int, input.cls),
-    pa: maxPA(input.int, input.cls),
-    defense: defenseValue(input.dex, input.armor ?? 0, input.cls),
+    hp: maxHP(input.fis, input.cls),
+    sanity: maxSanity(input.men, input.cls),
+    pa: maxPA(input.men, input.cls),
+    defense: defenseValue(input.fis, input.armor ?? 0, input.cls),
   };
 }
 
-
-export function initiative(dex: number): string {
-  return `1d20${dex >= 0 ? "+" : ""}${dex}`;
+/** Iniciativa (ADAPTAÇÃO): teste de Físico + Acrobacia. */
+export function initiative(fisDie: number, acroDie = 4): string {
+  return `d${fisDie}+d${acroDie}`;
 }
 
 // XP: 500 XP = 1 nível (Cap. 4.3)
@@ -839,7 +851,8 @@ export const CONDITIONS = [
 
 // Cap. 1.2 — Estrutura de rodada
 export const ROUND_RULES = [
-  "Cada rodada dura 6 segundos. Iniciativa: 1d20 + Destreza (empate pelo maior Intelecto).",
+  "Cada rodada dura 6 segundos. Iniciativa (adaptação): Físico + Acrobacia; empate pelo maior dado de Mente.",
+  "Ataque corpo a corpo: Físico + Luta. À distância: Físico + Pontaria. DT 7 (alcance longo: DT 10). Dano = RA + modificador da arma.",
   "Ação Principal: atacar, usar poder, ritual curto, item anômalo ou Relíquia.",
   "Ação Menor: mover-se, sacar arma, usar item comum ou dispositivo preparado.",
   "Reação: aparar, interromper, contra-atacar (fora do turno).",
@@ -848,26 +861,59 @@ export const ROUND_RULES = [
 
 
 
-// Perícias oficiais (Cap. 4.3)
-export const SKILLS: { key: string; name: string; attr: AttributeKey }[] = [
-  { key: "luta", name: "Luta", attr: "str" },
-  { key: "atletismo", name: "Atletismo", attr: "str" },
-  { key: "furtividade", name: "Furtividade", attr: "dex" },
-  { key: "mira", name: "Pontaria", attr: "dex" },
-  { key: "ocultismo", name: "Bruxaria", attr: "int" },
-  { key: "ritualismo", name: "Bruxaria", attr: "int" },
-  { key: "persuasao", name: "Persuasão", attr: "cha" },
-  { key: "vontade", name: "Resistência/Vontade", attr: "res" },
-  { key: "iniciativa", name: "Iniciativa", attr: "dex" },
+// Perícias — cada uma com seu atributo-base (o Mestre pode pedir outro conforme a ação)
+export const SKILLS: { key: string; name: string; attr: AttributeKey; use: string }[] = [
+  { key: "acrobacia", name: "Acrobacia", attr: "fis", use: "Saltar, fazer parkour, realizar movimentos difíceis." },
+  { key: "atletismo", name: "Atletismo", attr: "fis", use: "Correr, escalar, nadar, saltar e remar." },
+  { key: "crime", name: "Crime", attr: "fis", use: "Furtar, abrir fechaduras e falsificar documentos." },
+  { key: "furtividade", name: "Furtividade", attr: "fis", use: "Esconder-se e mover-se sem ser percebido." },
+  { key: "luta", name: "Luta", attr: "fis", use: "Atacar desarmado ou com armas corpo a corpo." },
+  { key: "pontaria", name: "Pontaria", attr: "fis", use: "Atacar com armas de disparo ou arremesso." },
+  { key: "vigor", name: "Vigor", attr: "fis", use: "Resistir a ferimentos, venenos, cansaço e Corrupção." },
+  { key: "aptidao", name: "Aptidão", attr: "men", use: "Conhecimentos específicos: Artes, Erudição, Folclore, Guerra, Nobreza, Religião." },
+  { key: "bruxaria", name: "Bruxaria", attr: "men", use: "Conhecimentos sobre o paranormal e as Anomalias." },
+  { key: "inspecionar", name: "Inspecionar", attr: "men", use: "Pesquisar documentos, analisar evidências e informações." },
+  { key: "medicina", name: "Medicina", attr: "men", use: "Primeiros socorros e tratamentos." },
+  { key: "metalurgia", name: "Metalurgia", attr: "men", use: "Fabricar e consertar itens." },
+  { key: "percepcao", name: "Percepção", attr: "men", use: "Notar coisas, ouvir, observar e revistar lugares." },
+  { key: "sobrevivencia", name: "Sobrevivência", attr: "men", use: "Rastrear, acampar e lidar com a natureza." },
+  { key: "animais", name: "Animais", attr: "emo", use: "Manejar, acalmar e cavalgar animais." },
+  { key: "disciplina", name: "Disciplina", attr: "emo", use: "Estudar, meditar, resistir a traumas e sustos (Sanidade)." },
+  { key: "enganacao", name: "Enganação", attr: "emo", use: "Mentir, disfarçar-se e seduzir." },
+  { key: "intimidar", name: "Intimidar", attr: "emo", use: "Assustar e coagir pessoas." },
+  { key: "intuicao", name: "Intuição", attr: "emo", use: "Interpretar pessoas e ambientes pelo instinto." },
+  { key: "persuasao", name: "Persuasão", attr: "emo", use: "Convencer alguém por meio de argumentos." },
 ];
 
+export const APTIDAO_SPECIALIZATIONS = ["Artes", "Erudição", "Folclore", "Guerra", "Nobreza", "Religião"] as const;
+
+/** DT padrão 7; alcance longo 10. Fácil (5) e Extrema (12) são ADAPTAÇÕES. */
 export const DIFFICULTIES = [
-  { label: "Fácil", cd: 5 },
-  { label: "Moderado", cd: 10 },
-  { label: "Difícil", cd: 15 },
-  { label: "Muito Difícil", cd: 20 },
-  { label: "Sobrenatural", cd: 25 },
+  { label: "Fácil*", cd: 5 },
+  { label: "Padrão", cd: 7 },
+  { label: "Difícil / Alcance longo", cd: 10 },
+  { label: "Extrema*", cd: 12 },
 ] as const;
+
+/** Conversão de CD antiga (d20) → DT (ADAPTAÇÃO): DT = CD ÷ 2, arredondado. */
+export function cdToDt(cd: number): number {
+  return Math.max(4, Math.round(cd / 2 + 0.01));
+}
+
+/** Conversão de CA antiga → Defesa (DT para acertar): 7 + metade do excedente sobre 10. */
+export function caToDefense(ca: number): number {
+  return 7 + Math.max(0, Math.ceil((ca - 10) / 2));
+}
+
+/** Conversão de bônus antigo de criatura (+N) → dados de Atributo + Perícia (ADAPTAÇÃO). */
+export function bonusToDice(bonus: number): [number, number] {
+  if (bonus <= 1) return [6, 4];
+  if (bonus <= 3) return [6, 6];
+  if (bonus <= 5) return [8, 6];
+  if (bonus <= 7) return [8, 8];
+  if (bonus <= 9) return [10, 8];
+  return [12, 10];
+}
 
 export function randomInviteCode(length = 6): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
