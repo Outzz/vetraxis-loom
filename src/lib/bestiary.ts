@@ -75,7 +75,7 @@ export const CREATURES: Creature[] = [
         name: "Reflexo Espelhado",
         description: "Ao ser atingido, devolve 1d4 de dano prismático ao atacante adjacente.",
       },
-      { name: "Frágil", description: "Dano contundente causa +2 contra o Estilhaço." },
+      { name: "Frágil", description: "Dano contundente causa +1 passo contra o Estilhaço." },
     ],
     lore: "Fragmento de um Portador morto. Ainda repete o último gesto que fez em vida.",
   },
@@ -93,7 +93,7 @@ export const CREATURES: Creature[] = [
     corruption: 2,
     attacks: [
       { name: "Garra Incandescente", roll: "+6", damage: "2d6+3 fogo" },
-      { name: "Sopro de Cinzas", roll: "CD 13 DES", damage: "3d6 fogo (cone 6m)", note: "1x por cena." },
+      { name: "Sopro de Cinzas", roll: "DT 7 Físico + Acrobacia", damage: "3d6 fogo (cone 6m)", note: "1x por cena." },
     ],
     traits: [
       {
@@ -121,7 +121,7 @@ export const CREATURES: Creature[] = [
     ],
     traits: [
       { name: "Incorpóreo Parcial", description: "Atravessa paredes finas; imune a dano físico não-anômalo." },
-      { name: "Silêncio Cósmico", description: "Anula sons num raio de 9m. Testes de Percepção com desvantagem." },
+      { name: "Silêncio Cósmico", description: "Anula sons num raio de 9m. Testes de Percepção com −1 passo." },
     ],
     lore: "Não é criatura: é uma ausência que aprendeu a se mover.",
   },
@@ -139,11 +139,11 @@ export const CREATURES: Creature[] = [
     corruption: 4,
     attacks: [
       { name: "Lança de Aurora", roll: "+8", damage: "2d10+4 radiante" },
-      { name: "Julgamento", roll: "CD 16 RES", damage: "4d8 radiante", note: "Só contra alvos com Corrupção ≥ 40." },
+      { name: "Julgamento", roll: "DT 8 Físico + Vigor", damage: "4d8 radiante", note: "Só contra alvos com Corrupção ≥ 40." },
     ],
     traits: [
       { name: "Imparcial", description: "Ignora criaturas com Corrupção 0. Não pode ser enganado." },
-      { name: "Aura Ofuscante", description: "Inimigos a 6m sofrem -2 em ataques à distância." },
+      { name: "Aura Ofuscante", description: "Inimigos a 6m sofrem -1 passo em ataques à distância." },
     ],
     lore: "Foi colocado ali para proteger algo. Ninguém lembra o quê — nem ele.",
   },
@@ -160,8 +160,8 @@ export const CREATURES: Creature[] = [
     sanityDC: 13,
     corruption: 5,
     attacks: [
-      { name: "Tentáculo Lenhoso", roll: "+7", damage: "2d8+5 contundente", note: "Agarra (CD 15 FOR)." },
-      { name: "Esporo Antigo", roll: "CD 14 RES", damage: "2d6 veneno/rodada", note: "Área 9m, 3 rodadas." },
+      { name: "Tentáculo Lenhoso", roll: "+7", damage: "2d8+5 contundente", note: "Agarra (DT 8 Físico + Atletismo)." },
+      { name: "Esporo Antigo", roll: "DT 7 Físico + Vigor", damage: "2d6 veneno/rodada", note: "Área 9m, 3 rodadas." },
     ],
     traits: [
       { name: "Regeneração", description: "Recupera 1d8 PV por rodada enquanto tocar solo natural." },
@@ -182,7 +182,7 @@ export const CREATURES: Creature[] = [
     sanityDC: 15,
     corruption: 4,
     attacks: [
-      { name: "Lamento", roll: "CD 15 INT", damage: "3d6 PS", note: "Todos que ouvem, sem limite de alcance." },
+      { name: "Lamento", roll: "DT 8 Emoção + Disciplina", damage: "3d6 PS", note: "Todos que ouvem, sem limite de alcance." },
       { name: "Mãos de Névoa", roll: "+4", damage: "1d6 necrótico por espírito (até 4)" },
     ],
     traits: [
@@ -205,7 +205,7 @@ export const CREATURES: Creature[] = [
     corruption: 6,
     attacks: [
       { name: "Punhal do Eu", roll: "+9", damage: "3d6+4 perfurante", note: "+2d6 se estava oculto." },
-      { name: "Troca", roll: "CD 17 RES", damage: "—", note: "Assume o lugar do alvo por 1 rodada." },
+      { name: "Troca", roll: "DT 9 Físico + Vigor", damage: "—", note: "Assume o lugar do alvo por 1 rodada." },
     ],
     traits: [
       { name: "Cópia", description: "Usa a maior perícia do alvo como se fosse sua." },
@@ -229,8 +229,8 @@ export const CREATURES: Creature[] = [
       { name: "Enterrar-se", roll: "+5", damage: "1d4", note: "Se acertar, hospeda-se: +1 Corrupção/dia." },
     ],
     traits: [
-      { name: "Hospedeiro", description: "Removida com Medicina CD 15 ou Ritual CD 12." },
-      { name: "Sussurro Interno", description: "O hospedeiro tem desvantagem em testes de Sanidade." },
+      { name: "Hospedeiro", description: "Removida com Mente + Medicina DT 8 ou Bruxaria DT 6." },
+      { name: "Sussurro Interno", description: "O hospedeiro tem −1 passo em testes de Sanidade." },
     ],
     lore: "Ela não mente. É esse o problema.",
   },
@@ -248,7 +248,7 @@ export const CREATURES: Creature[] = [
     corruption: 10,
     attacks: [
       { name: "Colapso", roll: "+12", damage: "4d10+8 anômalo" },
-      { name: "Abrir Fenda", roll: "CD 19 RES", damage: "6d8 + banimento", note: "Falha crítica: alvo desaparece da cena." },
+      { name: "Abrir Fenda", roll: "DT 10 Físico + Vigor", damage: "6d8 + banimento", note: "Falha crítica: alvo desaparece da cena." },
     ],
     traits: [
       { name: "Presença Impossível", description: "Todos em cena repetem teste de Sanidade a cada rodada." },
@@ -289,8 +289,8 @@ export const CREATURES: Creature[] = [
     sanityDC: 17,
     corruption: 7,
     attacks: [
-      { name: "Fio Onírico", roll: "+8", damage: "2d8+3 psíquico", note: "Alvo adormece (CD 16 RES)." },
-      { name: "Pesadelo Vivo", roll: "CD 17 INT", damage: "4d6 PS", note: "Só contra alvos adormecidos." },
+      { name: "Fio Onírico", roll: "+8", damage: "2d8+3 psíquico", note: "Alvo adormece (DT 8 Físico + Vigor)." },
+      { name: "Pesadelo Vivo", roll: "DT 9 Emoção + Disciplina", damage: "4d6 PS", note: "Só contra alvos adormecidos." },
     ],
     traits: [
       { name: "Domínio do Sonho", description: "Dentro de um sonho, tem CA 22 e regenera 2d6/rodada." },
@@ -333,7 +333,7 @@ export const CREATURES: Creature[] = [
     corruption: 2,
     attacks: [
       { name: "Malho Sagrado", roll: "+7", damage: "2d8+4 contundente" },
-      { name: "Repelir", roll: "CD 14 FOR", damage: "1d6", note: "Empurra 6m." },
+      { name: "Repelir", roll: "DT 7 Físico + Atletismo", damage: "1d6", note: "Empurra 6m." },
     ],
     traits: [
       { name: "Postura Inabalável", description: "Imune a Empurrão e a medo." },
@@ -357,7 +357,7 @@ export const CREATURES: Creature[] = [
       { name: "Mordida Sugadora", roll: "+4", damage: "1d6+2", note: "Cura o verme no mesmo valor." },
     ],
     traits: [
-      { name: "Escavador", description: "Move-se 6m sob a terra sem ser detectado (Percepção CD 14)." },
+      { name: "Escavador", description: "Move-se 6m sob a terra sem ser detectado (Percepção DT 7)." },
       { name: "Infestação", description: "Se ignorado por 3 rodadas, chama 1d4 vermes." },
     ],
     lore: "Onde há um, há sempre um ninho — e o ninho está com fome há mais tempo.",
@@ -375,7 +375,7 @@ export const CREATURES: Creature[] = [
     sanityDC: 22,
     corruption: 12,
     attacks: [
-      { name: "Nome Verdadeiro", roll: "CD 20 RES", damage: "5d10 psíquico", note: "Falha: alvo perde 1 perícia até descanso longo." },
+      { name: "Nome Verdadeiro", roll: "DT 10 Físico + Vigor", damage: "5d10 psíquico", note: "Falha: alvo perde 1 perícia até descanso longo." },
       { name: "Fragmentar", roll: "+11", damage: "3d12+6 prismático", note: "Ignora 4 de CA." },
     ],
     traits: [
@@ -406,7 +406,7 @@ export const CREATURES: Creature[] = [
       {
         name: "Afogamento Seco",
         description:
-          "Criaturas a até 6 m testam no início do turno. Falhas geram marcadores de Afogamento: 3 marcadores = -2 em testes físicos; 5 marcadores = 1d6 de dano por rodada.",
+          "Criaturas a até 6 m testam no início do turno. Falhas geram marcadores de Afogamento: 3 marcadores = -1 passo em testes físicos; 5 marcadores = 1d6 de dano por rodada.",
       },
       {
         name: "Maré Invertida",
@@ -414,7 +414,7 @@ export const CREATURES: Creature[] = [
       },
       {
         name: "Imóvel nas Águas",
-        description: "Enquanto não tiver sido detectado, recebe vantagem no primeiro ataque.",
+        description: "Enquanto não tiver sido detectado, recebe +1 dado adicional no primeiro ataque.",
       },
     ],
     lore: "Seus movimentos parecem ocorrer debaixo d'água. Onde ele chega, a pressão aumenta e os pulmões se enchem de algo que não existe.",
@@ -461,7 +461,7 @@ export const CREATURES: Creature[] = [
     corruption: 2,
     attacks: [
       { name: "Mordida", roll: "+6", damage: "2d8+3", note: "Corpo a corpo" },
-      { name: "Clarão Reverso", roll: "+5", damage: "2d6+2", note: "Sanidade CD 14" },
+      { name: "Clarão Reverso", roll: "+5", damage: "2d6+2", note: "Sanidade DT 7" },
       { name: "Garra", roll: "+5", damage: "2d6+3", note: "Corpo a corpo" },
     ],
     traits: [
@@ -469,7 +469,7 @@ export const CREATURES: Creature[] = [
       { name: "Fome Luminosa", description: "Depois de consumir uma fonte, seu próximo ataque causa +1d6." },
       {
         name: "Predador Escuro",
-        description: "Em escuridão total recebe +2 em iniciativa e em testes de aproximação furtiva.",
+        description: "Em escuridão total recebe +1 passo em iniciativa e em testes de aproximação furtiva.",
       },
     ],
     lore: "Não procura carne: procura iluminação. Conforme a luz some do ambiente, pontos luminosos surgem dentro dele.",
@@ -495,7 +495,7 @@ export const CREATURES: Creature[] = [
       { name: "Imitação", description: "Após observar uma criatura por 1 minuto, copia sua aparência e voz." },
       {
         name: "Rosto Conhecido",
-        description: "Atacar um Duplo imitando alguém conhecido exige Sanidade CD 16. Falha perde o ataque.",
+        description: "Atacar um Duplo imitando alguém conhecido exige Sanidade DT 8. Falha perde o ataque.",
       },
       { name: "Aprendizado", description: "Pode copiar um ataque físico simples que tenha presenciado." },
       { name: "Imperfeição", description: "Investigação cuidadosa revela pequenos erros na imitação." },
@@ -528,7 +528,7 @@ export const CREATURES: Creature[] = [
         name: "Território Vivo",
         description: "O solo num raio de 10 m vira extensão orgânica da criatura e conta como terreno difícil.",
       },
-      { name: "Coro", description: "Quando a Colmeia é revelada, todos fazem Sanidade CD 19." },
+      { name: "Coro", description: "Quando a Colmeia é revelada, todos fazem Sanidade DT 10." },
       { name: "Muitos Olhos", description: "Não pode ser flanqueada." },
     ],
     lore: "Uma comunidade de corpos que perderam a individualidade. Quando uma parte morre, outra assume sua função.",
@@ -574,7 +574,7 @@ export const CREATURES: Creature[] = [
     corruption: 2,
     attacks: [
       { name: "Garra", roll: "+5", damage: "2d6+2", note: "Corpo a corpo" },
-      { name: "Grito", roll: "CD 15", damage: "2d8", note: "Desorientação" },
+      { name: "Grito", roll: "DT 8", damage: "2d8", note: "Desorientação" },
       { name: "Impacto Sonoro", roll: "+5", damage: "1d10+3", note: "Empurra 2 m" },
     ],
     traits: [
@@ -640,7 +640,7 @@ export const CREATURES: Creature[] = [
         description: "Cria silêncio absoluto num raio de 8 m; falas, gritos e habilidades de voz não funcionam.",
       },
       { name: "Ela Escuta", description: "Se alguém tentar falar na Zona Muda, Silente sabe onde essa criatura está." },
-      { name: "Caçada Silenciosa", description: "Contra criatura isolada recebe +2 nas rolagens de ataque." },
+      { name: "Caçada Silenciosa", description: "Contra criatura isolada recebe +1 passo nas rolagens de ataque." },
     ],
     lore: "Primeiro somem os sons distantes, depois os passos, depois a respiração. Aí ele já está dentro da sala.",
   },
@@ -706,7 +706,7 @@ export const CREATURES: Creature[] = [
       },
       {
         name: "Acontecimento Inevitável",
-        description: "Ao chegar a 50 PV, todos fazem Sanidade CD 20. Quem falhar vê seu futuro e sofre -2 na próxima ação.",
+        description: "Ao chegar a 50 PV, todos fazem Sanidade DT 10. Quem falhar vê seu futuro e sofre -1 passo na próxima ação.",
       },
       {
         name: "Últimas Palavras",
