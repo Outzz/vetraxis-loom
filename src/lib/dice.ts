@@ -67,13 +67,12 @@ export function detectCritical(rolls: number[]): DiceResult["critical"] {
 /**
  * Rola um conjunto de dados (pool). Até 4 dados são rolados; somam-se no máximo os 3 maiores.
  */
-export function rollPool(sides: number[], modifier = 0, label?: string): DiceResult {
+export function rollPool(sides: number[], modifier = 0): DiceResult {
   const dice = sides.slice(0, MAX_DICE_ROLLED);
   const rolls = dice.map((s) => rollDie(s));
   const kept = [...rolls].sort((a, b) => b - a).slice(0, MAX_DICE_SUMMED);
   const sum = kept.reduce((a, b) => a + b, 0);
   const formula =
-    (label ? "" : "") +
     dice.map((s) => `d${s}`).join(" + ") +
     (modifier ? (modifier > 0 ? ` +${modifier}` : ` ${modifier}`) : "");
   return {
