@@ -1,6 +1,7 @@
 // Motor de combate — Anomalia Cósmica
 import type { Creature } from "./bestiary";
-import type { CosmicElement } from "./game-data";
+import { bonusToDice, caToDefense, cdToDt, type CosmicElement } from "./game-data";
+import { rollPool } from "./dice";
 
 export type CombatantKind = "creature" | "character";
 
@@ -73,13 +74,31 @@ export interface FormulaRoll {
   modifier: number;
   total: number;
   critical?: "success" | "fumble";
+  ra?: number;
 }
 
 const FORMULA_RE = /^\s*(\d*)\s*d\s*(\d+)\s*([+-]\s*\d+)?\s*$/i;
 
 /** Aceita "2d6+3", "d20", "1d8-1" ou um bônus puro como "+4". */
+const POOL_RE = /^\s*d\d+(\s*\+\s*d\d+)+\s*$/i;
+
+/** Converte "1d20+N" / "+N" antigos em dados de teste (Atributo + Perícia). */
+export function legacyToPool(raw: string): string {
+  const t = (raw ?? "").trim();
+  if (POOL_RE.test(t)) return t;
+  const m = /^(?:1?d20)?\s*([+-]?\s*\d+)?$/i.exec(t);
+  const bonus = m && m[1] ? parseInt(m[1].replace(/\s+/g, ""), 10) : 0;
+  const [a, b] = bonusToDice(bonus);
+  return `d${a}+d${b}`;
+}
+
 export function rollFormula(raw: string): FormulaRoll {
   const input = (raw ?? "").trim();
+  if (POOL_RE.test(input)) {
+    const sides = input.split("+").map((x) => parseInt(x.trim().slice(1), 10));
+    const r = rollPool(sides);
+    return { formula: r.formula, rolls: r.rolls, sides: 0, count: sides.length, modifier: 0, total: r.total, critical: r.critical, ra: r.ra };
+  }
   const match = FORMULA_RE.exec(input);
 
   if (!match) {
@@ -104,11 +123,8 @@ export function rollFormula(raw: string): FormulaRoll {
   }
   const total = rolls.reduce((a, b) => a + b, 0) + modifier;
 
-  let critical: FormulaRoll["critical"];
-  if (count === 1 && sides === 20) {
-    if (rolls[0] === 20) critical = "success";
-    if (rolls[0] === 1) critical = "fumble";
-  }
+  // Fórmulas NdS±M servem apenas para dano/efeitos — sem críticos.
+  const critical: FormulaRoll["critical"] = undefined;
 
   return {
     formula: `${count}d${sides}${modifier ? (modifier > 0 ? `+${modifier}` : modifier) : ""}`,
@@ -121,10 +137,11 @@ export function rollFormula(raw: string): FormulaRoll {
   };
 }
 
-/** Rola o ataque (d20 + bônus) — aceita "+7" ou "1d20+7". */
-export function rollAttack(rollNotation: string): FormulaRoll {
-  const notation = rollNotation.trim();
-  return rollFormula(/d\s*\d/i.test(notation) ? notation : `1d20${notation.startsWith("-") ? notation : `+${notation.replace(/^\+/, "")}`}`);
+/** Ataque de criatura: dados de Atributo + Perícia derivados do bônus. Retorna null para efeitos de resistência ("DT …"). */
+export function rollAttack(rollNotation: string): FormulaRoll | null {
+  const n = (rollNotation ?? "").trim();
+  if (/^(DT|CD)\b/i.test(n)) return null;
+  return rollFormula(legacyToPool(n));
 }
 
 /* ---------------- combatentes ---------------- */
@@ -145,12 +162,12 @@ export function combatantFromCreature(c: Creature, elementColor?: string): Comba
     color: elementColor,
     hpMax: c.hp,
     hpCurrent: c.hp,
-    ca: c.ca,
+    ca: caToDefense(c.ca),
     paMax: 3,
     paCurrent: 3,
-    initiativeFormula: c.initiative,
+    initiativeFormula: legacyToPool(c.initiative),
     initiative: null,
-    sanityDC: c.sanityDC,
+    sanityDC: cdToDt(c.sanityDC),
     corruption: c.corruption,
     attacks: c.attacks,
     conditions: [],
@@ -171,20 +188,19 @@ export interface CharacterLike {
   pa_max: number;
   corruption?: number;
   dex_score: number;
+  str_score?: number;
+  skills?: Record<string, number> | null;
   portrait_url?: string | null;
 }
 
-export function modifier(score: number) {
-  // No Anomalia Cósmica o valor do atributo já é o bônus.
-  return score;
-}
 
 
 export function combatantFromCharacter(
   ch: CharacterLike,
   elementColor?: string,
 ): Combatant {
-  const dex = modifier(ch.dex_score ?? 10);
+  const fis = ch.str_score ?? 6;
+  const acro = Number(ch.skills?.acrobacia ?? 4) || 4;
   return {
     id: uid(),
     kind: "character",
@@ -198,10 +214,10 @@ export function combatantFromCharacter(
     hpCurrent: ch.hp_current,
     sanityMax: ch.sanity_max ?? undefined,
     sanityCurrent: ch.sanity_current ?? undefined,
-    ca: 10 + dex,
+    ca: 7,
     paMax: ch.pa_max,
     paCurrent: ch.pa_current,
-    initiativeFormula: `1d20${dex >= 0 ? `+${dex}` : dex}`,
+    initiativeFormula: `d${fis}+d${acro}`,
     initiative: null,
     corruption: ch.corruption ?? 0,
     attacks: [],
