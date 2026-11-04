@@ -15,6 +15,7 @@ import {
   logEntry,
   resourceKey,
   rollAttack,
+  legacyToPool,
   rollFormula,
   saveEncounter,
   sortByInitiative,
@@ -777,7 +778,7 @@ function CombatantCard({
             >
               <span className="block text-foreground">{a.name}</span>
               <span className="font-mono text-[10px] text-white/45">
-                {a.roll} · {a.damage}
+                {/^(DT|CD)/i.test(a.roll) ? a.roll : legacyToPool(a.roll)} · {a.damage}
               </span>
             </button>
           ))}
