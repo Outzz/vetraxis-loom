@@ -11,7 +11,8 @@ import {
   ELEMENTS,
   RELICS,
   SKILLS,
-  attrModifier,
+  ATTR_SCALE,
+  SKILL_SCALE,
   classBonuses,
   corruptionTier,
   derivedStats,
@@ -22,7 +23,7 @@ import {
   type CosmicElement,
   type Relic,
 } from "@/lib/game-data";
-import { rollTest, rollDice } from "@/lib/dice";
+import { rollTest, stepDie, helpSteps, FUMBLE_TABLE, rollDie, DT_PADRAO, type TestResult } from "@/lib/dice";
 import { pushRoll } from "@/lib/dice-store";
 import { prepareCharacterPortrait } from "@/lib/character-image";
 
@@ -77,12 +78,20 @@ type Character = {
 };
 
 const ATTR_TO_SCORE: Record<AttributeKey, keyof Character> = {
-  str: "str_score",
-  dex: "dex_score",
-  int: "int_score",
-  cha: "cha_score",
-  res: "res_score",
+  fis: "str_score",
+  men: "int_score",
+  emo: "cha_score",
 };
+
+export type RollMods = { attrSteps: number; skillSteps: number; extraDice: number; help: number };
+const NO_MODS: RollMods = { attrSteps: 0, skillSteps: 0, extraDice: 0, help: 0 };
+
+function describe(label: string, r: TestResult) {
+  const kept = r.rolls.length > 3 ? ` (soma 3 maiores)` : "";
+  const res = r.passed == null ? "" : r.passed ? " · SUCESSO" : " · FALHA";
+  const crit = r.critical === "success" ? " ⭐ CRÍTICO" : r.critical === "fumble" ? ` ☠ FALHA CRÍTICA — ${FUMBLE_TABLE[rollDie(8) - 1]}` : "";
+  return `${label}${r.dt != null ? ` vs DT ${r.dt}` : ""}: ${r.formula} = [${r.rolls.join(", ")}]${kept} = ${r.total} · RA ${r.ra} · RB ${r.rb}${res}${crit}`;
+}
 
 
 function CharacterSheet() {
@@ -140,63 +149,54 @@ function CharacterSheet() {
     setLog((l) => [line, ...l].slice(0, 12));
   }
 
-  function rollAttr(key: AttributeKey) {
-    if (!c) return;
-    const mod = attrModifier(c[ATTR_TO_SCORE[key]] as number);
-    const r = rollDice(1, 20, mod);
-    pushRoll(r, { label: ATTRIBUTES[key].name });
-    addLog(
-      `${ATTRIBUTES[key].name}: ${r.formula} = [${r.rolls[0]}] ${mod >= 0 ? "+" : ""}${mod} = ${r.total}${
-        r.critical === "success" ? " ⭐" : r.critical === "fumble" ? " ☠" : ""
-      }`,
-    );
+  function skillDie(key: string) {
+    return Number(c?.skills[key] ?? 4) || 4;
   }
 
-  function rollSkill(skillKey: string, cd: number) {
-    if (!c) return;
+  function runTest(label: string, attr: AttributeKey, skillKey: string | null, dt: number | undefined, mods: RollMods = NO_MODS) {
+    if (!c) return null;
+    const attrDie = c[ATTR_TO_SCORE[attr]] as number;
+    const sDie = skillKey ? skillDie(skillKey) : 4;
+    const r = rollTest({
+      attrDie,
+      skillDie: sDie,
+      attrSteps: mods.attrSteps,
+      skillSteps: mods.skillSteps + mods.help,
+      extraDice: Array.from({ length: mods.extraDice }, () => stepDie(sDie, mods.skillSteps + mods.help)),
+      dt,
+    });
+    pushRoll(r, { label, cd: r.dt, passed: r.passed });
+    addLog(describe(label, r));
+    return r;
+  }
+
+  function rollAttr(key: AttributeKey) {
+    // Teste sem perícia aplicável: Atributo + d4 (destreinado).
+    runTest(`${ATTRIBUTES[key].name} (destreinado)`, key, null, undefined);
+  }
+
+  function rollSkill(skillKey: string, cd: number, attr?: AttributeKey, mods?: RollMods) {
     const skill = SKILLS.find((s) => s.key === skillKey)!;
-    const mod = attrModifier(c[ATTR_TO_SCORE[skill.attr]] as number);
-    const bonus = c.skills[skillKey] ?? 0;
-    const r = rollTest(mod, bonus, cd);
-    pushRoll(r, { label: skill.name, cd, passed: r.passed });
-    addLog(
-      `${skill.name} vs CD ${cd}: [${r.rolls[0]}] ${mod >= 0 ? "+" : ""}${mod}${bonus ? "+" + bonus : ""} = ${r.total} · ${
-        r.passed ? "SUCESSO" : "FALHA"
-      }${r.critical === "success" ? " ⭐" : r.critical === "fumble" ? " ☠" : ""}`,
-    );
+    const a = attr ?? skill.attr;
+    runTest(`${ATTRIBUTES[a].name} + ${skill.name}`, a, skillKey, cd, mods);
   }
 
   function rollSanity() {
-    if (!c) return;
-    const mod = attrModifier(c.int_score);
-    const r = rollTest(mod, 0, 15);
-    pushRoll(r, { label: "Teste de Sanidade", cd: 15, passed: r.passed });
-    addLog(
-      `Sanidade vs CD 15: [${r.rolls[0]}]${mod >= 0 ? "+" : ""}${mod} = ${r.total} · ${
-        r.passed ? "SUCESSO" : "PERDE SANIDADE"
-      }`,
-    );
+    runTest("Sanidade (Emoção + Disciplina)", "emo", "disciplina", DT_PADRAO);
   }
 
   function rollCorruption(intensity: number) {
-    if (!c) return;
-    const mod = attrModifier(c.res_score);
-    const cd = 10 + intensity;
-    const r = rollTest(mod, 0, cd);
-    pushRoll(r, { label: "Teste de Corrupção", cd, passed: r.passed });
-    addLog(
-      `Corrupção vs CD ${cd}: [${r.rolls[0]}]${mod >= 0 ? "+" : ""}${mod} = ${r.total} · ${
-        r.passed ? "RESISTE" : "GANHA CORRUPÇÃO"
-      }`,
-    );
+    // Adaptação: DT 7 + metade da intensidade (antiga CD 10 + intensidade ÷ 2).
+    const dt = DT_PADRAO + Math.ceil(intensity / 2);
+    runTest("Corrupção (Físico + Vigor)", "fis", "vigor", dt);
   }
 
   const derived = useMemo(() => {
     if (!c) return null;
     return derivedStats({
-      res: c.res_score,
-      int: c.int_score,
-      dex: c.dex_score,
+      fis: c.str_score,
+      men: c.int_score,
+      emo: c.cha_score,
       cls: c.character_class,
     });
   }, [c]);
@@ -451,28 +451,29 @@ function CharacterSheet() {
           <section className="glass-panel rounded-2xl p-6">
             <div className="mb-4 flex items-center justify-between">
               <p className="ritual-eyebrow">Atributos</p>
-              <span className="text-[10px] text-white/40">clique para rolar 1d20 + mod</span>
+              <span className="text-[10px] text-white/40">clique para rolar Atributo + d4</span>
             </div>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-              {(Object.entries(ATTRIBUTES) as [AttributeKey, typeof ATTRIBUTES.str][]).map(
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-3">
+              {(Object.entries(ATTRIBUTES) as [AttributeKey, typeof ATTRIBUTES.fis][]).map(
                 ([key, meta]) => {
                   const score = c[ATTR_TO_SCORE[key]] as number;
-                  const mod = attrModifier(score);
                   return (
+                    <div key={key} className="rounded-xl border border-white/10 bg-black/30 p-3 text-center">
                     <button
-                      key={key}
                       onClick={() => rollAttr(key)}
-                      className="group rounded-xl border border-white/10 bg-black/30 p-3 text-center transition-all hover:border-ritual-gold/50 hover:bg-ritual-gold/5"
+                      className="group w-full rounded-lg p-1 transition-all hover:bg-ritual-gold/5"
                     >
                       <p className="text-[10px] uppercase tracking-widest text-white/40">
                         {meta.short}
                       </p>
-                      <p className="ritual-title text-3xl text-foreground">{score}</p>
-                      <p className="font-mono text-xs text-ritual-gold">
-                        {mod >= 0 ? "+" : ""}
-                        {mod}
-                      </p>
+                      <p className="ritual-title text-3xl text-foreground">d{score}</p>
+                      <p className="text-[10px] text-ritual-gold">{ATTR_SCALE[score] ?? ""}</p>
                     </button>
+                    <div className="mt-1 flex justify-center gap-2">
+                      <button aria-label={`Reduzir passo de ${meta.name}`} onClick={() => update({ [ATTR_TO_SCORE[key]]: stepDie(score, -1) } as Partial<Character>)} className="size-6 rounded-full border border-white/10 text-white/50 hover:text-corruption">−</button>
+                      <button aria-label={`Aumentar passo de ${meta.name}`} onClick={() => update({ [ATTR_TO_SCORE[key]]: stepDie(score, 1) } as Partial<Character>)} className="size-6 rounded-full border border-white/10 text-white/50 hover:text-ritual-gold">+</button>
+                    </div>
+                    </div>
                   );
                 },
               )}
@@ -517,7 +518,7 @@ function CharacterSheet() {
                         onClick={rollSanity}
                         className="rounded-md border border-white/10 bg-black/30 px-4 py-2 text-xs text-foreground hover:border-prismatic/60 hover:bg-prismatic/10"
                       >
-                        Sanidade (CD 15)
+                        Sanidade (Emoção + Disciplina · DT 7)
                       </button>
                       {[1, 3, 5, 8].map((intensity) => (
                         <button
@@ -525,7 +526,7 @@ function CharacterSheet() {
                           onClick={() => rollCorruption(intensity)}
                           className="rounded-md border border-white/10 bg-black/30 px-4 py-2 text-xs text-foreground hover:border-corruption/60 hover:bg-corruption/10"
                         >
-                          Corrupção +{intensity} (CD {10 + intensity})
+                          Corrupção +{intensity} (Físico + Vigor · DT {7 + Math.ceil(intensity / 2)})
                         </button>
                       ))}
                     </div>
@@ -657,12 +658,12 @@ function CharacterSheet() {
             </div>
           )}
           <div className="glass-panel rounded-2xl p-4">
-            <p className="ritual-eyebrow mb-2">Rolar teste rápido</p>
+            <p className="ritual-eyebrow mb-2">Dificuldades (DT)</p>
             <div className="space-y-2">
               {DIFFICULTIES.map((d) => (
                 <div key={d.label} className="flex justify-between text-xs">
                   <span className="text-white/60">{d.label}</span>
-                  <span className="font-mono text-ritual-gold">CD {d.cd}</span>
+                  <span className="font-mono text-ritual-gold">DT {d.cd}</span>
                 </div>
               ))}
             </div>
@@ -891,81 +892,81 @@ function ClassPanel({
 }
 
 function SkillsPanel({
-
   c,
   onUpdate,
   onRoll,
 }: {
   c: Character;
   onUpdate: (p: Partial<Character>) => void;
-  onRoll: (key: string, cd: number) => void;
+  onRoll: (key: string, cd: number, attr?: AttributeKey, mods?: RollMods) => void;
 }) {
-  const [cd, setCd] = useState(10);
+  const [cd, setCd] = useState(7);
+  const [attrOverride, setAttrOverride] = useState<AttributeKey | "">("");
+  const [mods, setMods] = useState<RollMods>({ attrSteps: 0, skillSteps: 0, extraDice: 0, help: 0 });
+  const set = (k: keyof RollMods, v: number) => setMods((m) => ({ ...m, [k]: v }));
+  const numBtn = (k: keyof RollMods, min: number, max: number) => (
+    <span className="inline-flex items-center gap-1">
+      <button onClick={() => set(k, Math.max(min, mods[k] - 1))} className="size-5 rounded border border-white/10 text-white/60">−</button>
+      <span className="w-6 text-center font-mono text-xs text-foreground">{mods[k] > 0 && k !== "extraDice" ? "+" : ""}{mods[k]}</span>
+      <button onClick={() => set(k, Math.min(max, mods[k] + 1))} className="size-5 rounded border border-white/10 text-white/60">+</button>
+    </span>
+  );
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <label className="text-[10px] uppercase tracking-widest text-white/40">
-          CD do teste:
-        </label>
-        <div className="flex gap-1">
+      <div className="space-y-3 rounded-lg border border-white/5 bg-black/20 p-3 text-[11px] text-white/60">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="uppercase tracking-widest text-white/40">DT:</span>
           {DIFFICULTIES.map((d) => (
-            <button
-              key={d.cd}
-              onClick={() => setCd(d.cd)}
-              className={`rounded px-2 py-1 text-[10px] font-mono ${
-                cd === d.cd
-                  ? "bg-ritual-gold text-abyss"
-                  : "border border-white/10 text-white/60 hover:border-white/30"
-              }`}
-            >
+            <button key={d.cd} onClick={() => setCd(d.cd)} title={d.label}
+              className={`rounded px-2 py-1 font-mono text-[10px] ${cd === d.cd ? "bg-ritual-gold text-abyss" : "border border-white/10 text-white/60 hover:border-white/30"}`}>
               {d.cd}
             </button>
           ))}
+          <input type="number" min={1} value={cd} onChange={(e) => setCd(Math.max(1, +e.target.value || 7))}
+            className="w-14 rounded border border-white/10 bg-black/40 px-1 py-0.5 text-center font-mono text-xs" aria-label="DT personalizada" />
+          <span className="ml-3 uppercase tracking-widest text-white/40">Atributo:</span>
+          <select value={attrOverride} onChange={(e) => setAttrOverride(e.target.value as AttributeKey | "")}
+            className="rounded border border-white/10 bg-black/40 px-1 py-0.5 text-xs">
+            <option value="">Base da perícia</option>
+            {(Object.keys(ATTRIBUTES) as AttributeKey[]).map((k) => <option key={k} value={k}>{ATTRIBUTES[k].name}</option>)}
+          </select>
         </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <span>Passos no atributo {numBtn("attrSteps", -4, 4)}</span>
+          <span>Passos na perícia {numBtn("skillSteps", -4, 4)}</span>
+          <span>Dados adicionais {numBtn("extraDice", 0, 2)}</span>
+          <span className="inline-flex items-center gap-1">Ajuda de aliado:
+            <select value={mods.help} onChange={(e) => set("help", +e.target.value)} className="rounded border border-white/10 bg-black/40 px-1 py-0.5 text-xs">
+              <option value={0}>nenhuma</option>
+              <option value={helpSteps(6)}>perícia d6/d8 (+1 passo)</option>
+              <option value={helpSteps(10)}>perícia d10/d12 (+2 passos)</option>
+            </select>
+          </span>
+          <button onClick={() => setMods({ attrSteps: 0, skillSteps: 0, extraDice: 0, help: 0 })} className="text-[10px] uppercase tracking-widest text-white/40 hover:text-ritual-gold">limpar</button>
+        </div>
+        <p className="text-[10px] text-white/35">Até 4 dados rolados, somam-se no máximo os 3 maiores. Crítico: dados repetidos ≥ 6. Falha crítica: todos os dados em 1.</p>
       </div>
       <div className="grid gap-2 md:grid-cols-2">
         {SKILLS.map((s) => {
-          const bonus = c.skills[s.key] ?? 0;
-          const score = c[ATTR_TO_SCORE[s.attr]] as number;
-          const mod = attrModifier(score);
-          const total = mod + bonus;
+          const die = Number(c.skills[s.key] ?? 4) || 4;
+          const attr = attrOverride || s.attr;
+          const attrDie = c[ATTR_TO_SCORE[attr]] as number;
           return (
-            <div
-              key={s.key}
-              className="flex items-center justify-between rounded-lg border border-white/5 bg-black/20 p-2 pl-3"
-            >
-              <button
-                onClick={() => onRoll(s.key, cd)}
-                className="flex-1 text-left hover:text-ritual-gold"
-              >
+            <div key={s.key} className="flex items-center justify-between rounded-lg border border-white/5 bg-black/20 p-2 pl-3">
+              <button onClick={() => onRoll(s.key, cd, attr, mods)} className="flex-1 text-left hover:text-ritual-gold" title={s.use}>
                 <span className="text-sm text-foreground">{s.name}</span>
-                <span className="ml-2 text-[10px] uppercase text-white/40">
-                  {ATTRIBUTES[s.attr].short}
-                </span>
+                <span className="ml-2 text-[10px] uppercase text-white/40">{ATTRIBUTES[attr].short}</span>
+                <span className="block text-[10px] text-white/35">{SKILL_SCALE[die] ?? ""}</span>
               </button>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs text-ritual-gold">
-                  {total >= 0 ? "+" : ""}
-                  {total}
-                </span>
-                <input
-                  type="number"
-                  value={bonus}
-                  onChange={(e) => {
-                    const val = +e.target.value || 0;
-                    onUpdate({ skills: { ...c.skills, [s.key]: val } });
-                  }}
-                  className="w-12 rounded border border-white/10 bg-black/40 px-1 py-0.5 text-center font-mono text-xs"
-                  title="Bônus de perícia"
-                />
-                <button
-                  onClick={() => onRoll(s.key, cd)}
+              <div className="flex items-center gap-1.5">
+                <button aria-label={`Reduzir ${s.name}`} onClick={() => onUpdate({ skills: { ...c.skills, [s.key]: stepDie(die, -1) } })} className="size-5 rounded border border-white/10 text-white/50">−</button>
+                <span className="w-8 text-center font-mono text-xs text-ritual-gold">d{die}</span>
+                <button aria-label={`Aumentar ${s.name}`} onClick={() => onUpdate({ skills: { ...c.skills, [s.key]: stepDie(die, 1) } })} className="size-5 rounded border border-white/10 text-white/50">+</button>
+                <button onClick={() => onRoll(s.key, cd, attr, mods)}
                   className="rounded border border-ritual-gold/40 px-2 py-1 text-[10px] uppercase tracking-widest text-ritual-gold hover:bg-ritual-gold/10"
-                  title={`1d20 ${total >= 0 ? "+" : ""}${total} vs CD ${cd}`}
-                >
+                  title={`d${attrDie} + d${die} vs DT ${cd}`}>
                   Testar
                 </button>
-
               </div>
             </div>
           );
