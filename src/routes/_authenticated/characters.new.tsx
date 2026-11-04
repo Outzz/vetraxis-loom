@@ -54,41 +54,39 @@ function NewCharacter() {
   const [portraitUrl, setPortraitUrl] = useState<string | null>(null);
   const [preparingPortrait, setPreparingPortrait] = useState(false);
   const [attrs, setAttrs] = useState<Record<AttributeKey, number>>({
-    str: ATTR_START,
-    dex: ATTR_START,
-    int: ATTR_START,
-    cha: ATTR_START,
-    res: ATTR_START,
+    fis: ATTR_START,
+    men: ATTR_START,
+    emo: ATTR_START,
   });
   const [saving, setSaving] = useState(false);
 
   // Pool: 4 pontos + 1 ponto extra por atributo reduzido a 0.
   const { pool, remaining, zeroed } = useMemo(() => {
     const values = ATTR_KEYS.map((k) => attrs[k]);
-    const zeroCount = values.filter((v) => v === 0).length;
+    const zeroCount = values.filter((v) => v === 4).length;
     const poolValue = ATTR_POINTS + zeroCount;
-    const spentValue = values.reduce((sum, v) => sum + Math.max(0, v - ATTR_START), 0);
+    const spentValue = values.reduce((sum, v) => sum + Math.max(0, (v - ATTR_START) / 2), 0);
     return { pool: poolValue, remaining: poolValue - spentValue, zeroed: zeroCount };
   }, [attrs]);
 
   const derived = useMemo(
     () => ({
-      hp: maxHP(attrs.res),
-      sanity: maxSanity(attrs.int),
-      pa: maxPA(attrs.int),
-      defense: defenseValue(attrs.dex),
+      hp: maxHP(attrs.fis),
+      sanity: maxSanity(attrs.men),
+      pa: maxPA(attrs.men),
+      defense: defenseValue(attrs.fis),
     }),
     [attrs],
   );
 
   function adjust(key: AttributeKey, delta: number) {
     setAttrs((prev) => {
-      const next = prev[key] + delta;
-      if (next < 0 || next > ATTR_MAX_START) return prev;
+      const next = prev[key] + delta * 2;
+      if (next < 4 || next > ATTR_MAX_START) return prev;
       const projected = { ...prev, [key]: next };
       const values = ATTR_KEYS.map((k) => projected[k]);
-      const nextPool = ATTR_POINTS + values.filter((v) => v === 0).length;
-      const nextSpent = values.reduce((s, v) => s + Math.max(0, v - ATTR_START), 0);
+      const nextPool = ATTR_POINTS + values.filter((v) => v === 4).length;
+      const nextSpent = values.reduce((s, v) => s + Math.max(0, (v - ATTR_START) / 2), 0);
       if (nextSpent > nextPool) {
         toast.error("Pontos insuficientes. Reduza outro atributo primeiro.");
         return prev;
@@ -98,7 +96,7 @@ function NewCharacter() {
   }
 
   function reset() {
-    setAttrs({ str: ATTR_START, dex: ATTR_START, int: ATTR_START, cha: ATTR_START, res: ATTR_START });
+    setAttrs({ fis: ATTR_START, men: ATTR_START, emo: ATTR_START });
   }
 
   async function submit(e: React.FormEvent) {
@@ -135,12 +133,13 @@ function NewCharacter() {
         xp: 0,
         level: 1,
         corruption: 0,
-        str_score: attrs.str,
-        dex_score: attrs.dex,
-        int_score: attrs.int,
-        res_score: attrs.res,
-        cha_score: attrs.cha,
+        str_score: attrs.fis,
+        dex_score: attrs.fis,
+        int_score: attrs.men,
+        res_score: attrs.fis,
+        cha_score: attrs.emo,
         per_score: 0,
+        skills: {},
         hp_current: derived.hp,
         hp_max: derived.hp,
         sanity_current: derived.sanity,
@@ -250,7 +249,7 @@ function NewCharacter() {
 
         <section className="glass-panel space-y-4 rounded-2xl p-6">
           <div className="flex items-center justify-between">
-            <p className="ritual-eyebrow">Atributos · 4.0 Criação de Personagem</p>
+            <p className="ritual-eyebrow">Atributos · Dados d4 → d12</p>
             <div className="flex items-center gap-3">
               <span
                 className={`font-mono text-xs ${
@@ -261,7 +260,7 @@ function NewCharacter() {
                       : "text-white/60"
                 }`}
               >
-                Pontos restantes: {remaining} / {pool}
+                Aumentos de passo: {remaining} / {pool}
               </span>
               <button
                 type="button"
@@ -273,13 +272,14 @@ function NewCharacter() {
             </div>
           </div>
           <p className="text-xs text-white/40">
-            Todos os atributos começam em 1. Distribua 4 pontos; o máximo inicial é 3.
-            Reduzir um atributo para 0 concede +1 ponto extra — e uma consequência
-            narrativa permanente.
+            Todos os atributos começam em d6 (média humana). Distribua 2 aumentos de passo;
+            o máximo inicial é d10. Reduzir um atributo para d4 concede +1 aumento extra.
+            Todas as perícias começam em d4 (destreinado) e evoluem na ficha.
+            <em className="text-white/30"> (Adaptação: o texto de referência não define a criação.)</em>
             {zeroed > 0 && (
               <span className="text-corruption">
                 {" "}
-                {zeroed} atributo(s) zerado(s) → +{zeroed} ponto(s).
+                {zeroed} atributo(s) em d4 → +{zeroed} aumento(s).
               </span>
             )}
           </p>
@@ -291,7 +291,7 @@ function NewCharacter() {
                 <div
                   key={key}
                   className={`rounded-xl border p-3 ${
-                    value === 0
+                    value === 4
                       ? "border-corruption/40 bg-corruption/5"
                       : "border-white/5 bg-black/30"
                   }`}
@@ -316,7 +316,7 @@ function NewCharacter() {
                         −
                       </button>
                       <span className="min-w-[2ch] text-center font-mono text-lg text-foreground">
-                        {value}
+                        d{value}
                       </span>
                       <button
                         type="button"
@@ -328,7 +328,7 @@ function NewCharacter() {
                       </button>
                     </div>
                   </div>
-                  {value === 0 && (
+                  {value === 4 && (
                     <p className="mt-2 text-[10px] uppercase tracking-widest text-corruption">
                       {meta.zero}
                     </p>
@@ -338,10 +338,10 @@ function NewCharacter() {
             })}
           </div>
           <div className="mt-3 grid grid-cols-4 gap-3 border-t border-white/5 pt-4 text-center font-mono text-xs">
-            <Derived label="PV (10 + RES×2)" value={derived.hp} />
-            <Derived label="PS (10 + INT×2)" value={derived.sanity} />
-            <Derived label="PA (10 + INT×2)" value={derived.pa} />
-            <Derived label="Defesa (10 + DES)" value={derived.defense} />
+            <Derived label="PV (10 + passo FÍS×2)" value={derived.hp} />
+            <Derived label="PS (10 + passo MEN×2)" value={derived.sanity} />
+            <Derived label="PA (10 + passo MEN×2)" value={derived.pa} />
+            <Derived label="Defesa (DT 7)" value={derived.defense} />
           </div>
         </section>
 

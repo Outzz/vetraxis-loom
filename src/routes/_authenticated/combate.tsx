@@ -15,6 +15,7 @@ import {
   logEntry,
   resourceKey,
   rollAttack,
+  legacyToPool,
   rollFormula,
   saveEncounter,
   sortByInitiative,
@@ -118,7 +119,7 @@ function Combate() {
       const charactersQuery = supabase
       .from("characters")
       .select(
-        "id,name,concept,element,portrait_url,hp_current,hp_max,sanity_current,sanity_max,pa_current,pa_max,corruption,dex_score",
+        "id,name,concept,element,portrait_url,hp_current,hp_max,sanity_current,sanity_max,pa_current,pa_max,corruption,dex_score,str_score,skills",
       )
       .eq("campaign_id", campaignId ?? "")
       .order("created_at", { ascending: false });
@@ -194,7 +195,7 @@ function Combate() {
                     paCurrent: ch.pa_current,
                     paMax: ch.pa_max,
                     corruption: ch.corruption ?? cmb.corruption,
-                    ca: 10 + (ch.dex_score ?? 0),
+                    ca: 7,
                     defeated: ch.hp_current === 0,
                   };
                   syncedRef.current[cmb.sourceId] = resourceKey(synced);
@@ -305,7 +306,7 @@ function Combate() {
     const comb = combatantFromCreature(c, elColor(c.element));
     if (same) comb.name = `${c.name} ${same + 1}`;
     setState((s) => ({ ...s, combatants: [...s.combatants, comb] }));
-    pushLog("Mesa", `${comb.name} entra no encontro`, "system", `PV ${c.hp} · CA ${c.ca}`);
+    pushLog("Mesa", `${comb.name} entra no encontro`, "system", `PV ${c.hp} · Defesa ${comb.ca}`);
   }
 
   function addCharacter(ch: CharacterLike) {
@@ -368,12 +369,19 @@ function Combate() {
     const a = c.attacks[index];
     const atk = rollAttack(a.roll);
     const dmg = rollFormula(a.damage.replace(/[^0-9dD+\-\s]/g, "").trim() || "1d4");
+    if (!atk) {
+      pushLog(c.name, `${a.name} → alvos testam ${a.roll}`, "roll", `Dano ${dmg.formula}: [${dmg.rolls.join(", ")}] = ${dmg.total}${a.note ? ` · ${a.note}` : ""}`);
+      if (c.paCurrent > 0) update(c.id, { paCurrent: c.paCurrent - 1 });
+      return;
+    }
     const tone = atk.critical === "success" ? "critical" : atk.critical === "fumble" ? "fumble" : "roll";
+    // Crítico: acerta automaticamente; dano recebe a RA do ataque como rolagem adicional (adaptação).
+    const total = atk.critical === "success" ? dmg.total + (atk.ra ?? 0) : dmg.total;
     pushLog(
       c.name,
-      `${a.name} → ${atk.total} vs CA${atk.critical === "success" ? " (CRÍTICO)" : atk.critical === "fumble" ? " (FALHA CRÍTICA)" : ""}`,
+      `${a.name} → ${atk.formula} [${atk.rolls.join(", ")}] = ${atk.total} vs Defesa do alvo (DT 7 padrão)${atk.critical === "success" ? " · SUCESSO CRÍTICO" : atk.critical === "fumble" ? " · FALHA CRÍTICA" : ""}`,
       tone,
-      `Dano ${dmg.formula}: [${dmg.rolls.join(", ")}] = ${atk.critical === "success" ? dmg.total * 2 : dmg.total}${a.note ? ` · ${a.note}` : ""}`,
+      atk.critical === "fumble" ? "Erra automaticamente." : `Dano ${dmg.formula}: [${dmg.rolls.join(", ")}]${atk.critical === "success" ? ` + RA ${atk.ra}` : ""} = ${total}${a.note ? ` · ${a.note}` : ""}`,
     );
     if (c.paCurrent > 0) update(c.id, { paCurrent: c.paCurrent - 1 });
   }
@@ -654,8 +662,8 @@ function CombatantCard({
           <div>
             <h3 className="ritual-title text-2xl text-foreground">{c.name}</h3>
             <p className="text-xs italic text-white/45">
-              {c.subtitle} · CA {c.ca}
-              {c.sanityDC ? ` · Sanidade CD ${c.sanityDC}` : ""}
+              {c.subtitle} · Defesa {c.ca}
+              {c.sanityDC ? ` · Sanidade DT ${c.sanityDC}` : ""}
             </p>
           </div>
         </div>
@@ -770,7 +778,7 @@ function CombatantCard({
             >
               <span className="block text-foreground">{a.name}</span>
               <span className="font-mono text-[10px] text-white/45">
-                {a.roll} · {a.damage}
+                {/^(DT|CD)/i.test(a.roll) ? a.roll : legacyToPool(a.roll)} · {a.damage}
               </span>
             </button>
           ))}

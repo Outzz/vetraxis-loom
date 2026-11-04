@@ -1,3 +1,5 @@
+import { caToDefense, cdToDt } from "@/lib/game-data";
+import { legacyToPool } from "@/lib/combat";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
@@ -356,8 +358,8 @@ function CreatureCard({
 
       <div className="mt-4 grid grid-cols-4 gap-2 font-mono text-[11px]">
         <Stat label="PV" value={c.hp} />
-        <Stat label="CA" value={c.ca} />
-        <Stat label="SAN" value={`CD ${c.sanityDC}`} />
+        <Stat label="DEF" value={caToDefense(c.ca)} />
+        <Stat label="SAN" value={`DT ${cdToDt(c.sanityDC)}`} />
         <Stat label="COR" value={`+${c.corruption}`} />
       </div>
     </button>
@@ -423,8 +425,8 @@ function CreatureDetail({
 
       <div className="grid grid-cols-3 gap-2 font-mono text-xs">
         <Stat label="PV" value={c.hp} />
-        <Stat label="CA" value={c.ca} />
-        <Stat label="INIC" value={c.initiative} />
+        <Stat label="DEF" value={caToDefense(c.ca)} />
+        <Stat label="INIC" value={legacyToPool(c.initiative)} />
       </div>
 
       <section className="space-y-2">
@@ -433,7 +435,7 @@ function CreatureDetail({
           <div key={a.name} className="rounded-lg border border-white/5 bg-black/30 p-3">
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-sm text-foreground">{a.name}</span>
-              <span className="font-mono text-xs text-ritual-gold">{a.roll}</span>
+              <span className="font-mono text-xs text-ritual-gold">{/^(DT|CD)/i.test(a.roll) ? a.roll : legacyToPool(a.roll)}</span>
             </div>
             <p className="font-mono text-xs text-white/60">{a.damage}</p>
             {a.note && <p className="mt-1 text-xs text-white/40">{a.note}</p>}
@@ -452,7 +454,7 @@ function CreatureDetail({
       </section>
 
       <p className="text-[10px] uppercase tracking-widest text-white/35">
-        Sanidade CD {c.sanityDC} · Corrupção +{c.corruption} ao derrotar
+        Sanidade DT {cdToDt(c.sanityDC)} · Corrupção +{c.corruption} ao derrotar
       </p>
 
       <button
@@ -604,8 +606,8 @@ function CreatureEditor({
             onChange={(v) => set("initiative", v)}
           />
           <Num label="PV" value={draft.hp} onChange={(v) => set("hp", v)} />
-          <Num label="CA" value={draft.ca} onChange={(v) => set("ca", v)} />
-          <Num label="Sanidade CD" value={draft.sanityDC} onChange={(v) => set("sanityDC", v)} />
+          <Num label="CA base (→ Defesa)" value={draft.ca} onChange={(v) => set("ca", v)} />
+          <Num label="Sanidade CD base (→ DT ÷2)" value={draft.sanityDC} onChange={(v) => set("sanityDC", v)} />
           <Num label="Corrupção" value={draft.corruption} onChange={(v) => set("corruption", v)} />
         </div>
 
