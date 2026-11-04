@@ -47,9 +47,11 @@ export function useRolls(): RollEntry[] {
   );
 }
 
-/** "1d20 [14] +3 = 17" */
+/** "d8 + d6 [5 + 4] = 9 · RA 5 · RB 4" */
 export function rollBreakdown(r: RollEntry): string {
   const dice = `[${r.rolls.join(" + ")}]`;
   const mod = r.modifier ? ` ${r.modifier > 0 ? "+" : "−"} ${Math.abs(r.modifier)}` : "";
-  return `${dice}${mod} = ${r.total}`;
+  const rarb = r.ra != null ? ` · RA ${r.ra} · RB ${r.rb}` : "";
+  const crit = r.critical === "success" ? " · CRÍTICO" : r.critical === "fumble" ? " · FALHA CRÍTICA" : "";
+  return `${dice}${mod} = ${r.total}${rarb}${crit}`;
 }
